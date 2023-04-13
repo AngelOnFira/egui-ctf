@@ -1,0 +1,7 @@
+[
+    Text("Hello World"),
+    Text("This is a presentation"),
+    Text("This is a slide"),
+    Text("We're going to talk about the best web framework"),
+    Text("It's Jquery"),
+]
