@@ -14,6 +14,9 @@ pub struct TemplateApp {
     value: f32,
 
     login_panel: LoginPanel,
+
+    #[serde(skip)]
+    websocket_thread_handle: Option<std::thread::JoinHandle<()>>,
 }
 
 impl Default for TemplateApp {
@@ -23,6 +26,7 @@ impl Default for TemplateApp {
             label: "Hello World!".to_owned(),
             value: 2.7,
             login_panel: Default::default(),
+            websocket_thread_handle: None,
         }
     }
 }
@@ -33,13 +37,31 @@ impl TemplateApp {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
+        // Even if we can load state, we still need to get the websocket thread
+        // handle
+        
+        // Start a thread to handle websocket events
+        // let (ws_tx, ws_rx) = std::sync::mpsc::channel();
+        let (mut sender, receiver) = ewebsock::connect("wss://ws.postman-echo.com/raw").unwrap();
+        
+        sender.send(ewebsock::WsMessage::Text("Hellioooo!".into()));
+        let ws_thread = std::thread::spawn(move || {
+            while let Some(event) = receiver.try_recv() {
+                panic!("Received {:?}", event);
+            }
+        });
+        
+        
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
-
-        Default::default()
+        
+        Self {
+            websocket_thread_handle: Some(ws_thread),
+            ..Default::default()
+        }
     }
 }
 
@@ -52,7 +74,12 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self { label, value, login_panel } = self;
+        let Self {
+            label,
+            value,
+            login_panel,
+            ..
+        } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
