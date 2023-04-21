@@ -52,7 +52,7 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self { label, value } = self;
+        let Self { label, value, login_panel } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -111,7 +111,7 @@ impl eframe::App for TemplateApp {
             egui::warn_if_debug_build(ui);
 
             // Add the login panel
-            self.login_panel.ui(ui);
+            login_panel.show(ctx, &mut true);
         });
 
         if false {
