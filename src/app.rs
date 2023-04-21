@@ -1,5 +1,6 @@
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
+use crate::panels::login::LoginPanel;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -11,6 +12,8 @@ pub struct TemplateApp {
     // this how you opt-out of serialization of a member
     #[serde(skip)]
     value: f32,
+
+    login_panel: LoginPanel,
 }
 
 impl Default for TemplateApp {
@@ -19,6 +22,7 @@ impl Default for TemplateApp {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
+            login_panel: Default::default(),
         }
     }
 }
@@ -105,6 +109,9 @@ impl eframe::App for TemplateApp {
                 "Source code."
             ));
             egui::warn_if_debug_build(ui);
+
+            // Add the login panel
+            self.login_panel.ui(ui);
         });
 
         if false {
