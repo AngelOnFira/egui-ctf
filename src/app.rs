@@ -1,3 +1,4 @@
+use epi::Frame;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
 use crate::panels::login::LoginPanel;
@@ -39,41 +40,54 @@ impl TemplateApp {
 
         // Even if we can load state, we still need to get the websocket thread
         // handle
-        
-        // Start a thread to handle websocket events
-        // let (ws_tx, ws_rx) = std::sync::mpsc::channel();
-        let (mut sender, receiver) = ewebsock::connect("wss://ws.postman-echo.com/raw").unwrap();
-        
-        sender.send(ewebsock::WsMessage::Text("Hellioooo!".into()));
-        let ws_thread = std::thread::spawn(move || {
-            while let Some(event) = receiver.try_recv() {
-                panic!("Received {:?}", event);
-            }
-        });
-        
-        
+
+        // // Start a thread to handle websocket events
+        // // let (ws_tx, ws_rx) = std::sync::mpsc::channel();
+        // let (mut sender, receiver) = ewebsock::connect("wss://ws.postman-echo.com/raw").unwrap();
+
+        // sender.send(ewebsock::WsMessage::Text("Hellioooo!".into()));
+        // let ws_thread = wasm_bindgen_futures::spawn_local(move || {
+        //     while let Some(event) = receiver.try_recv() {
+        //         panic!("Received {:?}", event);
+        //     }
+        // });
+
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
-        
+
         Self {
-            websocket_thread_handle: Some(ws_thread),
+            websocket_thread_handle: None,
+            // websocket_thread_handle: Some(ws_thread),
             ..Default::default()
+        }
+    }
+
+    fn connect(&mut self, frame: epi::Frame) {
+        let wakeup = move || frame.request_repaint(); // wake up UI thread on new message
+        match ewebsock::connect_with_wakeup("wss://ws.postman-echo.com/raw", wakeup) {
+            Ok((ws_sender, ws_receiver)) => {
+                self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
+                self.error.clear();
+            }
+            Err(error) => {
+                panic!("Failed to connect {}", error);
+            }
         }
     }
 }
 
-impl eframe::App for TemplateApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
+impl epi::App for TemplateApp {
+    // /// Called by the frame work to save state before shutdown.
+    // fn save(&mut self, storage: &mut dyn epi::Storage) {
+    //     eframe::set_value(storage, eframe::APP_KEY, self);
+    // }
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &epi::egui::Context, _frame: &Frame) {
         let Self {
             label,
             value,
@@ -87,17 +101,16 @@ impl eframe::App for TemplateApp {
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        _frame.close();
-                    }
-                });
-            });
-        });
-
+        // egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        //     // The top panel is often a good place for a menu bar:
+        //     egui::menu::bar(ui, |ui| {
+        //         ui.menu_button("File", |ui| {
+        //             if ui.button("Quit").clicked() {
+        //                 _frame.close();
+        //             }
+        //         });
+        //     });
+        // });
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
 
@@ -149,5 +162,28 @@ impl eframe::App for TemplateApp {
                 ui.label("You would normally choose either panels OR windows.");
             });
         }
+    }
+
+    fn setup(
+        &mut self,
+        _ctx: &epi::egui::Context,
+        frame: &epi::Frame,
+        _storage: Option<&dyn epi::Storage>,
+    ) {
+        if let Some(web_info) = &frame.info().web_info {
+            // allow `?url=` query param
+            if let Some(url) = web_info.location.query_map.get("url") {
+                self.url = url.clone();
+            }
+        }
+        if self.url.is_empty() {
+            self.url = "wss://echo.websocket.events/.ws".into(); // echo server
+        }
+
+        self.connect(frame.clone());
+    }
+
+    fn name(&self) -> &str {
+        todo!()
     }
 }
