@@ -1,4 +1,3 @@
-use epi::Frame;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
 use crate::panels::login::LoginPanel;
@@ -14,10 +13,19 @@ pub struct TemplateApp {
     #[serde(skip)]
     value: f32,
 
-    login_panel: LoginPanel,
+    login_panel: Option<LoginPanel>,
+
+    connection_state: ConnectionState,
 
     #[serde(skip)]
     websocket_thread_handle: Option<std::thread::JoinHandle<()>>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub enum ConnectionState {
+    Disconnected,
+    Connecting,
+    Connected,
 }
 
 impl Default for TemplateApp {
@@ -28,6 +36,7 @@ impl Default for TemplateApp {
             value: 2.7,
             login_panel: Default::default(),
             websocket_thread_handle: None,
+            connection_state: ConnectionState::Disconnected,
         }
     }
 }
@@ -54,9 +63,9 @@ impl TemplateApp {
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
+        // if let Some(storage) = cc.storage {
+        //     return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        // }
 
         Self {
             websocket_thread_handle: None,
@@ -65,12 +74,13 @@ impl TemplateApp {
         }
     }
 
-    fn connect(&mut self, frame: epi::Frame) {
-        let wakeup = move || frame.request_repaint(); // wake up UI thread on new message
-        match ewebsock::connect_with_wakeup("wss://ws.postman-echo.com/raw", wakeup) {
+    fn connect(&mut self, ctx: egui::Context) {
+        self.connection_state = ConnectionState::Connecting;
+        let wakeup = move || ctx.request_repaint(); // wake up UI thread on new message
+        match ewebsock::connect_with_wakeup("ws://localhost:4040/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
-                self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
-                self.error.clear();
+                self.login_panel = Some(LoginPanel::default());
+                // self.error.clear();
             }
             Err(error) => {
                 panic!("Failed to connect {}", error);
@@ -79,21 +89,30 @@ impl TemplateApp {
     }
 }
 
-impl epi::App for TemplateApp {
+impl eframe::App for TemplateApp {
     // /// Called by the frame work to save state before shutdown.
-    // fn save(&mut self, storage: &mut dyn epi::Storage) {
+    // fn save(&mut self, storage: &mut dyn Storage) {
     //     eframe::set_value(storage, eframe::APP_KEY, self);
     // }
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &epi::egui::Context, _frame: &Frame) {
-        let Self {
-            label,
-            value,
-            login_panel,
-            ..
-        } = self;
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // let Self {
+        //     label,
+        //     value,
+        //     login_panel,
+        //     connection_state,
+        //     ..
+        // } = self;
+
+        match self.connection_state {
+            ConnectionState::Disconnected => {
+                self.connect(ctx.clone());
+                // connection_state = &mut ConnectionState::Connecting
+            }
+            _ => {}
+        };
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -116,12 +135,12 @@ impl epi::App for TemplateApp {
 
             ui.horizontal(|ui| {
                 ui.label("Write something: ");
-                ui.text_edit_singleline(label);
+                ui.text_edit_singleline(&mut self.label);
             });
 
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
+            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
             if ui.button("Increment").clicked() {
-                *value += 1.0;
+                self.value += 1.0;
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
@@ -151,7 +170,9 @@ impl epi::App for TemplateApp {
             egui::warn_if_debug_build(ui);
 
             // Add the login panel
-            login_panel.show(ctx, &mut true);
+            if let Some(login_panel) = &mut self.login_panel {
+                login_panel.show(ctx, &mut true);
+            }
         });
 
         if false {
@@ -164,26 +185,26 @@ impl epi::App for TemplateApp {
         }
     }
 
-    fn setup(
-        &mut self,
-        _ctx: &epi::egui::Context,
-        frame: &epi::Frame,
-        _storage: Option<&dyn epi::Storage>,
-    ) {
-        if let Some(web_info) = &frame.info().web_info {
-            // allow `?url=` query param
-            if let Some(url) = web_info.location.query_map.get("url") {
-                self.url = url.clone();
-            }
-        }
-        if self.url.is_empty() {
-            self.url = "wss://echo.websocket.events/.ws".into(); // echo server
-        }
+    // fn setup(
+    //     &mut self,
+    //     _ctx: &egui::Context,
+    //     frame: &Frame,
+    //     _storage: Option<&dyn Storage>,
+    // ) {
+    //     if let Some(web_info) = &frame.info().web_info {
+    //         // allow `?url=` query param
+    //         if let Some(url) = web_info.location.query_map.get("url") {
+    //             self.url = url.clone();
+    //         }
+    //     }
+    //     if self.url.is_empty() {
+    //         self.url = "wss://echo.websocket.events/.ws".into(); // echo server
+    //     }
 
-        self.connect(frame.clone());
-    }
+    //     self.connect(frame.clone());
+    // }
 
-    fn name(&self) -> &str {
-        todo!()
-    }
+    // fn name(&self) -> &str {
+    //     todo!()
+    // }
 }
