@@ -1,7 +1,3 @@
-use crate::game_server::game_room::{Game, GameData, GameRoom, PlayerData};
-use actix::{AsyncContext, Context};
-use std::collections::HashMap;
-
 use super::{BattlesnakeDirection, Coordinate};
 
 pub struct Snake {

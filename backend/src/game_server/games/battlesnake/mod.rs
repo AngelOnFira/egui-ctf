@@ -45,7 +45,7 @@ impl Game for Battlesnake {
         // let mut map = HashMap::new();
 
         // Once a second, move to the next turn
-        ctx.run_interval(std::time::Duration::from_secs(1), |game_room, ctx| {
+        ctx.run_interval(std::time::Duration::from_secs(1), |game_room, _ctx| {
             // Start by resolving the previous turn. There will be a new game
             // state for each turn. The moves that each player makes will be
             // stored in the previous turn, so that a new turn can be fully set
@@ -58,7 +58,7 @@ impl Game for Battlesnake {
             };
 
             // Make a new turn state
-            let mut new_turn_state = GameTurnState {
+            let _new_turn_state = GameTurnState {
                 map: HashMap::new(),
                 player_actions: HashMap::new(),
                 snakes: HashMap::new(),
@@ -155,7 +155,6 @@ impl Game for Battlesnake {
             //     // If it isn't, then add it to the map
             //     snake_heads.insert(head, player_id);
             // }
-
         });
 
         // Get the players
@@ -184,7 +183,6 @@ impl Game for Battlesnake {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_snake_move() {
