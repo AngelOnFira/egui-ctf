@@ -1,8 +1,8 @@
-use game_message::CTFMessage;
+use ctf_message::CTFMessage;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub mod game_message;
+pub mod ctf_message;
 pub mod room;
 
 pub type ClientId = Uuid;

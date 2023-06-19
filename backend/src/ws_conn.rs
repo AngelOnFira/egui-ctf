@@ -107,7 +107,7 @@ impl StreamHandler<Result<Message, ws::ProtocolError>> for WsConn {
                             if let NetworkMessage::CTFMessage(message) = message {
                                 room.do_send(GameRoomMessage {
                                     id: self.id,
-                                    game_message: message,
+                                    ctf_message: message,
                                 });
                             }
                         }

@@ -1,3 +1,5 @@
+use common::ctf_message::CTFClientState;
+
 use crate::panels::{frontend::FrontEnd, login::LoginPanel};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -13,6 +15,14 @@ pub struct TemplateApp {
 
     #[serde(skip)]
     websocket_thread_handle: Option<std::thread::JoinHandle<()>>,
+
+    client_state: ClientState,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct ClientState {
+    // pub credentials: Option<Credentials>,
+    pub ctf_state: Option<CTFClientState>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -30,6 +40,9 @@ impl Default for TemplateApp {
             frontend: None,
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
+            client_state: ClientState {
+                ctf_state: None,
+            },
         }
     }
 }

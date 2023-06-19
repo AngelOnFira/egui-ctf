@@ -1,6 +1,6 @@
 use actix::prelude::{Message, Recipient};
 
-use common::{game_message::CTFMessage, NetworkMessage};
+use common::{ctf_message::CTFMessage, NetworkMessage};
 use uuid::Uuid;
 
 #[derive(Message)]
@@ -31,7 +31,7 @@ pub enum WsActorMessage {
 #[rtype(result = "()")]
 pub struct GameRoomMessage {
     pub id: Uuid,
-    pub game_message: CTFMessage,
+    pub ctf_message: CTFMessage,
 }
 
 #[derive(Message)]

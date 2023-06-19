@@ -3,7 +3,10 @@ use actix::{
     prelude::{Actor, Context, Handler, Recipient},
     AsyncContext,
 };
-use common::{ClientId, NetworkMessage, RoomId};
+use common::{
+    ctf_message::{self, CTFMessage, CTFState},
+    ClientId, NetworkMessage, RoomId,
+};
 use sea_orm::{Database, DatabaseConnection};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
@@ -14,6 +17,7 @@ pub type GameRoomSocket = Recipient<GameRoomMessage>;
 pub struct CTFServer {
     db: DatabaseConnection,
     sessions: HashMap<ClientId, WsClientSocket>,
+    ctf_state: CTFState,
 }
 
 impl CTFServer {
@@ -23,6 +27,7 @@ impl CTFServer {
         Ok(CTFServer {
             db,
             sessions: HashMap::new(),
+            ctf_state: CTFState::default(),
         })
     }
 }
@@ -80,6 +85,14 @@ impl Handler<Connect> for CTFServer {
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
         self.sessions.insert(msg.self_id, msg.addr.clone());
+
+        // Send the current state of the CTF to the user
+        self.send_message(
+            NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
+                self.ctf_state.get_client_state(),
+            )),
+            &msg.self_id,
+        )
     }
 }
 
