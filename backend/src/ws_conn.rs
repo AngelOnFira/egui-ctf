@@ -150,9 +150,7 @@ impl Handler<WsActorMessage> for WsConn {
             WsActorMessage::IncomingMessage(network_message) => {
                 send_client_message(network_message, ctx);
             }
-            WsActorMessage::ActorRequest(actor_request) => match actor_request {
-
-            },
+            WsActorMessage::ActorRequest(actor_request) => match actor_request {},
             WsActorMessage::OutgoingMessage(network_message) => {
                 send_client_message(network_message, ctx);
             }

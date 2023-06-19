@@ -1,8 +1,8 @@
 use actix::Actor;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
-use env_logger;
 use ctf_server::CTFServer;
+use env_logger;
 use start_connection::start_connection_route;
 
 mod ctf_server;
