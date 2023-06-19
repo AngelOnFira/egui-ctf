@@ -10,7 +10,6 @@ use common::{ClientId, NetworkMessage, RoomId};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
-mod game_room;
 pub mod games;
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
@@ -18,16 +17,12 @@ pub type GameRoomSocket = Recipient<GameRoomMessage>;
 
 pub struct CTFServer {
     sessions: HashMap<ClientId, WsClientSocket>,
-    rooms: HashMap<RoomId, GameRoomSocket>,
-    client_room_map: HashMap<ClientId, Option<RoomId>>,
 }
 
 impl CTFServer {
     pub fn new_with_rooms() -> Self {
         CTFServer {
             sessions: HashMap::new(),
-            rooms: HashMap::new(),
-            client_room_map: HashMap::new(),
         }
     }
 }
@@ -62,14 +57,6 @@ impl Handler<Disconnect> for CTFServer {
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
         // Remove this user from the room, and notify others
         // Find the room that the user is in
-        for (_, _room) in self.rooms.iter() {
-            //     if room.users.contains(&msg.id) {
-            //         // Notify the other users in the room
-            //         for user_id in room.users.iter() {
-            //             self.send_message(NetworkMessage::UserDisconnected(msg.id), user_id);
-            //         }
-            //     }
-        }
 
         // // TODO: Improve this so we don't have to iterate over the whole hashmap
         // // a second time. Right now it's so it can send messages in the first,
@@ -92,7 +79,6 @@ impl Handler<Connect> for CTFServer {
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
         self.sessions.insert(msg.self_id, msg.addr.clone());
-        self.client_room_map.insert(msg.self_id, None);
     }
 }
 
