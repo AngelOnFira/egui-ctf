@@ -1,5 +1,5 @@
 use crate::{
-    game_server::{CTFServer, GameRoomSocket},
+    ctf_server::{CTFServer, GameRoomSocket},
     messages::{Connect, Disconnect, GameRoomMessage, WsActorMessage},
 };
 use actix::{
@@ -151,13 +151,7 @@ impl Handler<WsActorMessage> for WsConn {
                 send_client_message(network_message, ctx);
             }
             WsActorMessage::ActorRequest(actor_request) => match actor_request {
-                crate::messages::ActorRequest::UpdateRoom(room_id) => {
-                    self.room = Some(room_id);
 
-                    // Pass this change along
-                    // let msg = NetworkMessage::RoomId(room_id);
-                    // send_client_message(msg, ctx);
-                }
             },
             WsActorMessage::OutgoingMessage(network_message) => {
                 send_client_message(network_message, ctx);

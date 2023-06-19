@@ -1,5 +1,4 @@
 use crate::{
-    game_server::{game_room::GameData, games::guess_the_number::GuessTheNumberGame},
     messages::{ActorRequest, Connect, Disconnect, GameRoomMessage, WsActorMessage},
 };
 use actix::{
@@ -10,7 +9,6 @@ use common::{ClientId, NetworkMessage, RoomId};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
-pub mod games;
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
 pub type GameRoomSocket = Recipient<GameRoomMessage>;

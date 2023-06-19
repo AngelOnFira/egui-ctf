@@ -3,7 +3,6 @@ use actix::prelude::{Message, Recipient};
 use common::{game_message::CTFMessage, NetworkMessage};
 use uuid::Uuid;
 
-use crate::game_server::GameRoomSocket;
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -39,5 +38,4 @@ pub struct GameRoomMessage {
 #[derive(Message)]
 #[rtype(result = "()")]
 pub enum ActorRequest {
-    UpdateRoom(GameRoomSocket),
 }

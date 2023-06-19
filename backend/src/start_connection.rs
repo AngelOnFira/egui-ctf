@@ -1,4 +1,4 @@
-use crate::{game_server::CTFServer, ws_conn::WsConn};
+use crate::{ctf_server::CTFServer, ws_conn::WsConn};
 use actix::Addr;
 use actix_web::{
     get,
