@@ -1,5 +1,5 @@
 use crate::{
-    game_server::{GameRoomSocket, GameServer},
+    game_server::{CTFServer, GameRoomSocket},
     messages::{Connect, Disconnect, GameRoomMessage, WsActorMessage},
 };
 use actix::{
@@ -17,13 +17,13 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(3);
 
 pub struct WsConn {
     room: Option<GameRoomSocket>,
-    game_server_addr: Addr<GameServer>,
+    game_server_addr: Addr<CTFServer>,
     hb: Instant,
     id: Uuid,
 }
 
 impl WsConn {
-    pub fn new(game_server: Addr<GameServer>) -> WsConn {
+    pub fn new(game_server: Addr<CTFServer>) -> WsConn {
         WsConn {
             id: Uuid::new_v4(),
             room: None,

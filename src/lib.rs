@@ -2,4 +2,4 @@
 
 mod app;
 pub use app::TemplateApp;
-mod panels;
+pub mod panels;

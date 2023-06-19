@@ -1,4 +1,4 @@
-use crate::{game_server::GameServer, ws_conn::WsConn};
+use crate::{game_server::CTFServer, ws_conn::WsConn};
 use actix::Addr;
 use actix_web::{
     get,
@@ -11,7 +11,7 @@ use actix_web_actors::ws;
 pub async fn start_connection_route(
     req: HttpRequest,
     stream: Payload,
-    srv: Data<Addr<GameServer>>,
+    srv: Data<Addr<CTFServer>>,
 ) -> Result<HttpResponse, Error> {
     let ws = WsConn::new(srv.get_ref().clone());
 

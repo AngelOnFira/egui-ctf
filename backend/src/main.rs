@@ -2,7 +2,7 @@ use actix::Actor;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
 use env_logger;
-use game_server::GameServer;
+use game_server::CTFServer;
 use start_connection::start_connection_route;
 
 mod game_server;
@@ -12,7 +12,7 @@ mod ws_conn;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let game_server = Data::new(GameServer::new_with_rooms().start()); //create and spin up a lobby
+    let game_server = Data::new(CTFServer::new_with_rooms().start()); //create and spin up a lobby
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
 

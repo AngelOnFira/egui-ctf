@@ -1,4 +1,4 @@
-use crate::panels::login::LoginPanel;
+use crate::panels::{frontend::FrontEnd, login::LoginPanel};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -12,6 +12,9 @@ pub struct TemplateApp {
     value: f32,
 
     login_panel: Option<LoginPanel>,
+
+    #[serde(skip)]
+    frontend: Option<FrontEnd>,
 
     connection_state: ConnectionState,
 
@@ -32,7 +35,9 @@ impl Default for TemplateApp {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
-            login_panel: Default::default(),
+            // Panels
+            login_panel: None,
+            frontend: None,
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
         }
@@ -76,8 +81,8 @@ impl TemplateApp {
         self.connection_state = ConnectionState::Connecting;
         let wakeup = move || ctx.request_repaint(); // wake up UI thread on new message
         match ewebsock::connect_with_wakeup("ws://localhost:4040/ws", wakeup) {
-            Ok((_ws_sender, _ws_receiver)) => {
-                self.login_panel = Some(LoginPanel::default());
+            Ok((ws_sender, ws_receiver)) => {
+                self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
                 // self.error.clear();
             }
             Err(error) => {
@@ -170,6 +175,10 @@ impl eframe::App for TemplateApp {
             // Add the login panel
             if let Some(login_panel) = &mut self.login_panel {
                 login_panel.show(ctx, &mut true);
+            }
+
+            if let Some(frontend) = &mut self.frontend {
+                frontend.ui(ctx);
             }
         });
 
