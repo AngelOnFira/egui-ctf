@@ -12,7 +12,8 @@ mod ws_conn;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let ctf_server = Data::new(CTFServer::new_with_rooms().start()); //create and spin up a lobby
+    let ctf_server = CTFServer::new_with_rooms().await.unwrap();
+    let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
 

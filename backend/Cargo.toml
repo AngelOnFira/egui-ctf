@@ -19,3 +19,7 @@ serde_json = "*"
 uuid = "1.2.2"
 env_logger = "0.10.0"
 rand = "0.8.5"
+
+# Database
+sea-orm = { version = "0.11.3", features = [ "sqlx-sqlite", "runtime-actix-rustls", "macros" ] }
+anyhow = "1.0.71"

@@ -4,13 +4,6 @@ use crate::panels::{frontend::FrontEnd, login::LoginPanel};
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    // Example stuff:
-    label: String,
-
-    // this how you opt-out of serialization of a member
-    #[serde(skip)]
-    value: f32,
-
     login_panel: Option<LoginPanel>,
 
     #[serde(skip)]
@@ -32,9 +25,6 @@ pub enum ConnectionState {
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
             // Panels
             login_panel: None,
             frontend: None,
@@ -80,7 +70,7 @@ impl TemplateApp {
     fn connect(&mut self, ctx: egui::Context) {
         self.connection_state = ConnectionState::Connecting;
         let wakeup = move || ctx.request_repaint(); // wake up UI thread on new message
-        match ewebsock::connect_with_wakeup("ws://localhost:4040/ws", wakeup) {
+        match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
                 self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
                 // self.error.clear();
@@ -136,15 +126,15 @@ impl eframe::App for TemplateApp {
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
-            });
+            // ui.horizontal(|ui| {
+            //     ui.label("Write something: ");
+            //     ui.text_edit_singleline(&mut self.label);
+            // });
 
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
+            // ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
+            // if ui.button("Increment").clicked() {
+            //     self.value += 1.0;
+            // }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {

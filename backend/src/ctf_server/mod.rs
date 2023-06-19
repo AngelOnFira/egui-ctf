@@ -4,6 +4,7 @@ use actix::{
     AsyncContext,
 };
 use common::{ClientId, NetworkMessage, RoomId};
+use sea_orm::{Database, DatabaseConnection};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
@@ -11,14 +12,18 @@ pub type WsClientSocket = Recipient<WsActorMessage>;
 pub type GameRoomSocket = Recipient<GameRoomMessage>;
 
 pub struct CTFServer {
+    db: DatabaseConnection,
     sessions: HashMap<ClientId, WsClientSocket>,
 }
 
 impl CTFServer {
-    pub fn new_with_rooms() -> Self {
-        CTFServer {
+    pub async fn new_with_rooms() -> anyhow::Result<Self> {
+        // Load the database connection with the sqlite file.db
+        let db = Database::connect("sqlite://file.db").await?;
+        Ok(CTFServer {
+            db,
             sessions: HashMap::new(),
-        }
+        })
     }
 }
 
@@ -64,6 +69,7 @@ impl Handler<Disconnect> for CTFServer {
         // }
 
         // Remove this user's session
+        println!("User disconnected: {}", msg.id);
         self.sessions.remove(&msg.id);
     }
 }
