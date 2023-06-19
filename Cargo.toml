@@ -9,6 +9,7 @@ rust-version = "1.65"
 members = [
     "backend",
     "common",
+    "migration",
 ]
 
 [dependencies]
