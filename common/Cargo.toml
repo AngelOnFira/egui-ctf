@@ -14,3 +14,4 @@ ron = "0.8.0"
 serde = { version = "1.0.147", features = ["derive"] }
 uuid = { version = "1.2.2", features = ["serde", "v4"] }
 getrandom = { version = "0.2.10", features = ["js"] }
+sea-orm = { version = "^0" }

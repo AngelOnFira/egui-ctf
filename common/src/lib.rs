@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 pub mod ctf_message;
 pub mod room;
+pub mod schema;
 
 pub type ClientId = Uuid;
 pub type RoomId = Uuid;

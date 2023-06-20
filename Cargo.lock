@@ -1239,6 +1239,7 @@ dependencies = [
  "ciborium",
  "getrandom",
  "ron",
+ "sea-orm",
  "serde",
  "uuid",
 ]
@@ -1634,6 +1635,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071a31f4ee85403370b58aca746f01041ede6f0da2730960ad001edc2b71b394"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "entity"
+version = "0.1.0"
+dependencies = [
+ "sea-orm",
+ "serde",
 ]
 
 [[package]]
