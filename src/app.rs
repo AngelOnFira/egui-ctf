@@ -1,4 +1,5 @@
-use common::ctf_message::CTFClientState;
+use common::{ctf_message::{CTFClientState, CTFMessage}, NetworkMessage};
+use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
 use crate::panels::{frontend::FrontEnd, login::LoginPanel};
 
@@ -11,8 +12,11 @@ pub struct TemplateApp {
     #[serde(skip)]
     frontend: Option<FrontEnd>,
 
+    #[serde(skip)]
     connection_state: ConnectionState,
 
+    // #[serde(skip)]
+    // websocket_connection:
     #[serde(skip)]
     websocket_thread_handle: Option<std::thread::JoinHandle<()>>,
 
@@ -25,11 +29,13 @@ pub struct ClientState {
     pub ctf_state: Option<CTFClientState>,
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
 pub enum ConnectionState {
     Disconnected,
     Connecting,
-    Connected,
+    Connected {
+        ws_sender: WsSender,
+        ws_receiver: WsReceiver,
+    },
 }
 
 impl Default for TemplateApp {
@@ -40,9 +46,7 @@ impl Default for TemplateApp {
             frontend: None,
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
-            client_state: ClientState {
-                ctf_state: None,
-            },
+            client_state: ClientState { ctf_state: None },
         }
     }
 }
@@ -85,7 +89,11 @@ impl TemplateApp {
         let wakeup = move || ctx.request_repaint(); // wake up UI thread on new message
         match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
-                self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
+                // self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
+                self.connection_state = ConnectionState::Connected {
+                    ws_sender,
+                    ws_receiver,
+                };
                 // self.error.clear();
             }
             Err(error) => {
@@ -112,10 +120,34 @@ impl eframe::App for TemplateApp {
         //     ..
         // } = self;
 
-        match self.connection_state {
+        match &self.connection_state {
             ConnectionState::Disconnected => {
                 self.connect(ctx.clone());
-                // connection_state = &mut ConnectionState::Connecting
+            }
+            ConnectionState::Connected {
+                ws_sender,
+                ws_receiver,
+            } => {
+                while let Some(event) = ws_receiver.try_recv() {
+                    if let WsEvent::Message(WsMessage::Text(ws_text)) = event {
+                        // Deserialize the message
+                        let message: NetworkMessage = serde_json::from_str(&ws_text).unwrap();
+
+                        match message {
+                            // All messages about the CTF game
+                            NetworkMessage::CTFMessage(ctf_message) => {
+                                match ctf_message {
+                                    // If we get a state update from the server
+                                    CTFMessage::CTFClientState(ctf_client_state) => {
+                                        self.client_state.ctf_state = Some(ctf_client_state);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
             _ => {}
         };
@@ -125,7 +157,7 @@ impl eframe::App for TemplateApp {
         // Tip: a good default choice is to just keep the `CentralPanel`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
+        // #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         // egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
         //     // The top panel is often a good place for a menu bar:
         //     egui::menu::bar(ui, |ui| {

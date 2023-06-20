@@ -14,8 +14,6 @@ pub enum NetworkMessage {
     Heartbeat,
     Time(u64),
     UserDisconnected(Uuid),
-    AvailableLobbies(Vec<Uuid>),
-    RoomId(Uuid),
     CTFMessage(CTFMessage),
 }
 
