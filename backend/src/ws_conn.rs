@@ -46,7 +46,7 @@ impl Actor for WsConn {
                 self_id: self.id,
             })
             .into_actor(self)
-            .then(|res, _, ctx| {
+            .then(|res, _, ctx: &mut ws::WebsocketContext<WsConn>| {
                 match res {
                     Ok(_res) => (),
                     _ => ctx.stop(),

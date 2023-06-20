@@ -1,7 +1,7 @@
 use crate::messages::{ActorRequest, Connect, Disconnect, GameRoomMessage, WsActorMessage};
 use actix::{
     prelude::{Actor, Context, Handler, Recipient},
-    AsyncContext,
+    ActorFutureExt, AsyncContext, ResponseActFuture,
 };
 use common::{
     ctf_message::{self, CTFMessage, CTFState, Hacker, HackerTeam},
@@ -10,7 +10,7 @@ use common::{
 use entity::entities::{hacker, team};
 use fake::{faker::internet::en::Username, Fake};
 use itertools::Itertools;
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, Set, EntityTrait};
+use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
@@ -63,46 +63,6 @@ impl CTFServer {
             let _ = socket_recipient.do_send(WsActorMessage::IncomingMessage(message.clone()));
         }
     }
-
-    // Update the state of the ctf server, then send it all connected clients
-    async fn broadcast_state(&mut self) {
-        // Get all the teams from the database
-        let teams = hacker::Entity::find()
-            .all(&self.db)
-            .await
-            .expect("Failed to get all teams");
-
-        // Get all the players from the database
-        let players = hacker::Entity::find()
-            .all(&self.db)
-            .await
-            .expect("Failed to get all players");
-
-        // Update the state
-        // Clear the current teams
-        self.ctf_state.hacker_teams.clear();
-
-        // Sort the teams by username
-        teams.iter().sorted_by(|a, b| a.username.cmp(&b.username)).for_each(|team| {
-            let hackers = players
-                .iter()
-                .filter(|player| player.fk_team_id == Some(team.id))
-                .map(|player| Hacker {
-                    name: player.username.clone(),
-                })
-                .collect::<Vec<Hacker>>();
-
-            self.ctf_state.hacker_teams.push(HackerTeam {
-                name: team.username.clone(),
-                hackers,
-            });
-        });
-
-        // Broadcast the state
-        self.broadcast_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
-            self.ctf_state.get_client_state(),
-        )));
-    }
 }
 
 impl Handler<Disconnect> for CTFServer {
@@ -128,8 +88,17 @@ impl Handler<Disconnect> for CTFServer {
     }
 }
 
+// The response type returned by the actor future
+type OriginalActorResponse = ();
+// The error type returned by the actor future
+type MessageError = ();
+// This is the needed result for the DeferredWork message
+// It's a result that combine both Response and Error from the future response.
+type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
+
 impl Handler<Connect> for CTFServer {
-    type Result = ();
+    // type Result = ();
+    type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
     fn handle(&mut self, msg: Connect, ctx: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
@@ -151,10 +120,7 @@ impl Handler<Connect> for CTFServer {
                 ..Default::default()
             };
 
-            let team: team::Model = team
-                .insert(&db_clone)
-                .await
-                .expect("Failed to insert team");
+            let team: team::Model = team.insert(&db_clone).await.expect("Failed to insert team");
 
             // Add a new hacker to the database
             let hacker = hacker::ActiveModel {
@@ -168,12 +134,19 @@ impl Handler<Connect> for CTFServer {
                 .await
                 .expect("Failed to insert hacker");
 
-            // Broadcast the state change to all players
-            self.broadcast_state().await;
+            // Get the updated state from the database
+            CTFState::rebuild_state(&db_clone).await
         };
 
         let fut = actix::fut::wrap_future::<_, Self>(fut);
-        ctx.spawn(fut);
+
+        let fut = fut.map(|result, actor, _ctx| {
+            // Actor's state updated here
+            actor.ctf_state = result;
+            Ok(())
+        });
+
+        Box::pin(fut)
 
         // Broadcast the state change to all players
         // self.broadcase_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
@@ -183,4 +156,3 @@ impl Handler<Connect> for CTFServer {
         // Ok(())
     }
 }
-

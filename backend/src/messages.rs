@@ -4,7 +4,7 @@ use common::{ctf_message::CTFMessage, NetworkMessage};
 use uuid::Uuid;
 
 #[derive(Message)]
-#[rtype(result = "()")]
+#[rtype(result = "ResponseActFuture<Self, DeferredWorkResult>")]
 pub struct Connect {
     pub addr: Recipient<WsActorMessage>,
     pub self_id: Uuid,
