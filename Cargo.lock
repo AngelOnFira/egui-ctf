@@ -748,6 +748,7 @@ dependencies = [
  "anyhow",
  "ciborium",
  "common",
+ "entity",
  "env_logger",
  "fake",
  "rand",

@@ -7,8 +7,9 @@ use common::{
     ctf_message::{self, CTFMessage, CTFState, Hacker, HackerTeam},
     ClientId, NetworkMessage, RoomId,
 };
+use entity::entities::hacker;
 use fake::{faker::internet::en::Username, Fake};
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, Set};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
@@ -24,7 +25,7 @@ pub struct CTFServer {
 impl CTFServer {
     pub async fn new_with_rooms() -> anyhow::Result<Self> {
         // Load the database connection with the sqlite file.db
-        let db = Database::connect("sqlite://file.db").await?;
+        let db = Database::connect("sqlite://../file.db").await?;
         Ok(CTFServer {
             db,
             sessions: HashMap::new(),
@@ -89,7 +90,7 @@ impl Handler<Disconnect> for CTFServer {
 impl Handler<Connect> for CTFServer {
     type Result = ();
 
-    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Connect, ctx: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
         self.sessions.insert(msg.self_id, msg.addr.clone());
 
@@ -102,10 +103,29 @@ impl Handler<Connect> for CTFServer {
             }],
         });
 
+        // Add a new hacker to the database
+        let db_clone = self.db.clone();
+        let fut = async move {
+            let hacker = hacker::ActiveModel {
+                username: Set(Username().fake::<String>()),
+                ..Default::default()
+            };
+
+            let hacker: hacker::Model = hacker
+                .insert(&db_clone)
+                .await
+                .expect("Failed to insert hacker");
+        };
+
+        let fut = actix::fut::wrap_future::<_, Self>(fut);
+        ctx.spawn(fut);
+
         // Broadcast the state change to all players
-        self.broadcase_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
-            self.ctf_state.get_client_state(),
-        )))
+        // self.broadcase_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
+        //     self.ctf_state.get_client_state(),
+        // )));
+
+        // Ok(())
     }
 }
 
