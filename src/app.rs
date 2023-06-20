@@ -1,13 +1,19 @@
-use common::{ctf_message::{CTFClientState, CTFMessage}, NetworkMessage};
+use common::{
+    ctf_message::{CTFClientState, CTFMessage},
+    NetworkMessage,
+};
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
-use crate::panels::{frontend::FrontEnd, login::LoginPanel};
+use crate::panels::{frontend::FrontEnd, hacker_list::HackerList, login::LoginPanel};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     login_panel: Option<LoginPanel>,
+
+    #[serde(skip)]
+    hacker_list: HackerList,
 
     #[serde(skip)]
     frontend: Option<FrontEnd>,
@@ -44,6 +50,8 @@ impl Default for TemplateApp {
             // Panels
             login_panel: None,
             frontend: None,
+            hacker_list: HackerList::default(),
+            // Other state
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
             client_state: ClientState { ctf_state: None },
@@ -207,14 +215,20 @@ impl eframe::App for TemplateApp {
             ));
             egui::warn_if_debug_build(ui);
 
-            // Add the login panel
-            if let Some(login_panel) = &mut self.login_panel {
-                login_panel.show(ctx, &mut true);
+            // Check if we're connected to the server
+            if let ConnectionState::Connected { .. } = &self.connection_state {
+                // Show the hacker list
+                self.hacker_list.show(ctx, &self.client_state)
             }
 
-            if let Some(frontend) = &mut self.frontend {
-                frontend.ui(ctx);
-            }
+            // // Add the login panel
+            // if let Some(login_panel) = &mut self.login_panel {
+            //     login_panel.show(ctx, &mut true);
+            // }
+
+            // if let Some(frontend) = &mut self.frontend {
+            //     frontend.ui(ctx);
+            // }
         });
 
         if false {

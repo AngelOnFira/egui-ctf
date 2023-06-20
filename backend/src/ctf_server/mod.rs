@@ -4,9 +4,10 @@ use actix::{
     AsyncContext,
 };
 use common::{
-    ctf_message::{self, CTFMessage, CTFState},
+    ctf_message::{self, CTFMessage, CTFState, Hacker, HackerTeam},
     ClientId, NetworkMessage, RoomId,
 };
+use fake::{faker::internet::en::Username, Fake};
 use sea_orm::{Database, DatabaseConnection};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
@@ -17,7 +18,7 @@ pub type GameRoomSocket = Recipient<GameRoomMessage>;
 pub struct CTFServer {
     db: DatabaseConnection,
     sessions: HashMap<ClientId, WsClientSocket>,
-    ctf_state: CTFState,
+    pub ctf_state: CTFState,
 }
 
 impl CTFServer {
@@ -54,6 +55,12 @@ impl CTFServer {
             println!("attempting to send message but couldn't find user id.");
         }
     }
+
+    fn broadcase_message(&self, message: NetworkMessage) {
+        for (_, socket_recipient) in self.sessions.iter() {
+            let _ = socket_recipient.do_send(WsActorMessage::IncomingMessage(message.clone()));
+        }
+    }
 }
 
 impl Handler<Disconnect> for CTFServer {
@@ -86,12 +93,20 @@ impl Handler<Connect> for CTFServer {
         println!("User connected: {}", msg.self_id);
         self.sessions.insert(msg.self_id, msg.addr.clone());
 
-        // Send the current state of the CTF to the user
-        self.send_message(
+        // Add them to a team
+        self.ctf_state.hacker_teams.push(HackerTeam {
+            name: Username().fake::<String>(),
+            hackers: vec![Hacker {
+                name: Username().fake::<String>(),
+                score: 0,
+            }],
+        });
+
+        // Broadcast the state change to all players
+        self.broadcase_message(
             NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
                 self.ctf_state.get_client_state(),
             )),
-            &msg.self_id,
         )
     }
 }

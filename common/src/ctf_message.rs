@@ -9,7 +9,7 @@ pub trait CTFMessageTag {}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CTFState {
-    hacker_teams: Vec<HackerTeam>,
+    pub hacker_teams: Vec<HackerTeam>,
 }
 
 impl Default for CTFState {
@@ -32,18 +32,19 @@ impl CTFState {
 /// A subset of the information stored in the CTF state, to be passed to the client
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CTFClientState {
-    hacker_teams: Vec<HackerTeam>,
+    pub hacker_teams: Vec<HackerTeam>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HackerTeam {
-    hackers: Vec<Hacker>,
+    pub name: String,
+    pub hackers: Vec<Hacker>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hacker {
-    name: String,
-    score: u32,
+    pub name: String,
+    pub score: u32,
 }
 
 impl CTFMessageTag for CTFState {}
