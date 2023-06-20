@@ -133,7 +133,7 @@ impl eframe::App for TemplateApp {
                 self.connect(ctx.clone());
             }
             ConnectionState::Connected {
-                ws_sender,
+                ws_sender: _,
                 ws_receiver,
             } => {
                 while let Some(event) = ws_receiver.try_recv() {
@@ -149,7 +149,6 @@ impl eframe::App for TemplateApp {
                                     CTFMessage::CTFClientState(ctf_client_state) => {
                                         self.client_state.ctf_state = Some(ctf_client_state);
                                     }
-                                    _ => {}
                                 }
                             }
                             _ => {}

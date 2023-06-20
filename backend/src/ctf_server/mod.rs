@@ -103,11 +103,9 @@ impl Handler<Connect> for CTFServer {
         });
 
         // Broadcast the state change to all players
-        self.broadcase_message(
-            NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
-                self.ctf_state.get_client_state(),
-            )),
-        )
+        self.broadcase_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
+            self.ctf_state.get_client_state(),
+        )))
     }
 }
 

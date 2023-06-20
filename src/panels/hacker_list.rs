@@ -1,6 +1,5 @@
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
-use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
 use crate::app::ClientState;
 
@@ -37,7 +36,7 @@ impl HackerList {
         ui.add_enabled_ui(self.enabled, |ui| {
             ui.set_visible(self.visible);
 
-            let mut table = TableBuilder::new(ui)
+            let table = TableBuilder::new(ui)
                 // .striped(self.striped)
                 // .resizable(self.resizable)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
