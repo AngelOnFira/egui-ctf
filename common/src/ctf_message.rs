@@ -44,7 +44,6 @@ pub struct HackerTeam {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hacker {
     pub name: String,
-    pub score: u32,
 }
 
 impl CTFMessageTag for CTFState {}

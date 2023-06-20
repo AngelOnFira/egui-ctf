@@ -9,17 +9,32 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub username: String,
+    pub fk_team_id: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::submission::Entity")]
     Submission,
+    #[sea_orm(
+        belongs_to = "super::team::Entity",
+        from = "Column::FkTeamId",
+        to = "super::team::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Team,
 }
 
 impl Related<super::submission::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Submission.def()
+    }
+}
+
+impl Related<super::team::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Team.def()
     }
 }
 

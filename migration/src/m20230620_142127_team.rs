@@ -3,7 +3,6 @@ use sea_orm_migration::prelude::*;
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
-/// Learn more at https://docs.rs/sea-query#iden
 #[derive(Iden)]
 enum Team {
     Table,
