@@ -1,4 +1,4 @@
-use entity::entities::hacker;
+use entity::entities::{hacker, team};
 use iter_tools::Itertools;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -31,16 +31,18 @@ impl CTFState {
         }
     }
 
-    ///
+    /// Rebuild the state from the database. It might be better to just update
+    /// state then flush it to the database or something, but whatever, it's a
+    /// cheap operation on this size of data.
     pub async fn rebuild_state(db: &DatabaseConnection) -> Self {
         // Get all the teams from the database
-        let teams = hacker::Entity::find()
+        let teams = team::Entity::find()
             .all(db)
             .await
             .expect("Failed to get all teams");
 
         // Get all the players from the database
-        let players = hacker::Entity::find()
+        let hackers = hacker::Entity::find()
             .all(db)
             .await
             .expect("Failed to get all players");
@@ -48,9 +50,9 @@ impl CTFState {
         // Sort the teams by username
         let teams = teams
             .iter()
-            .sorted_by(|a, b| a.username.cmp(&b.username))
+            .sorted_by(|a, b| a.name.cmp(&b.name))
             .map(|team| {
-                let hackers = players
+                let hackers = hackers
                     .iter()
                     .filter(|player| player.fk_team_id == Some(team.id))
                     .map(|player| Hacker {
@@ -59,7 +61,7 @@ impl CTFState {
                     .collect::<Vec<Hacker>>();
 
                 HackerTeam {
-                    name: team.username.clone(),
+                    name: team.name.clone(),
                     hackers,
                 }
             })

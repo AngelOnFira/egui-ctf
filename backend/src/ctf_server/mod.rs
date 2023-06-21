@@ -98,19 +98,14 @@ impl Handler<Connect> for CTFServer {
         println!("User connected: {}", msg.self_id);
         self.sessions.insert(msg.self_id, msg.addr.clone());
 
-        // Add them to a team
-        self.ctf_state.hacker_teams.push(HackerTeam {
-            name: Username().fake::<String>(),
-            hackers: vec![Hacker {
-                name: Username().fake::<String>(),
-            }],
-        });
-
         let db_clone = self.db.clone();
         let fut = async move {
+            // Start username generation
+            let username_gen = Username();
+
             // Add a new team to the database
             let team = team::ActiveModel {
-                name: Set(Username().fake::<String>()),
+                name: Set(username_gen.fake::<String>()),
                 ..Default::default()
             };
 
@@ -118,7 +113,7 @@ impl Handler<Connect> for CTFServer {
 
             // Add a new hacker to the database
             let hacker = hacker::ActiveModel {
-                username: Set(Username().fake::<String>()),
+                username: Set(username_gen.fake::<String>()),
                 fk_team_id: Set(Some(team.id)),
                 ..Default::default()
             };
@@ -146,13 +141,7 @@ impl Handler<Connect> for CTFServer {
             Ok(())
         });
 
+        // Return the future to be run
         Box::pin(fut)
-
-        // Broadcast the state change to all players
-        // self.broadcase_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
-        //     self.ctf_state.get_client_state(),
-        // )));
-
-        // Ok(())
     }
 }
