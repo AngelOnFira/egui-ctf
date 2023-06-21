@@ -1,4 +1,6 @@
-use crate::messages::{ActorRequest, Connect, Disconnect, GameRoomMessage, WsActorMessage};
+use crate::messages::{
+    ActorRequest, Connect, DeferredWorkResult, Disconnect, GameRoomMessage, WsActorMessage,
+};
 use actix::{
     prelude::{Actor, Context, Handler, Recipient},
     ActorFutureExt, AsyncContext, ResponseActFuture,
@@ -88,14 +90,6 @@ impl Handler<Disconnect> for CTFServer {
     }
 }
 
-// The response type returned by the actor future
-type OriginalActorResponse = ();
-// The error type returned by the actor future
-type MessageError = ();
-// This is the needed result for the DeferredWork message
-// It's a result that combine both Response and Error from the future response.
-type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
-
 impl Handler<Connect> for CTFServer {
     // type Result = ();
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
@@ -143,6 +137,12 @@ impl Handler<Connect> for CTFServer {
         let fut = fut.map(|result, actor, _ctx| {
             // Actor's state updated here
             actor.ctf_state = result;
+
+            // Broadcast the state change to all players
+            actor.broadcast_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
+                actor.ctf_state.get_client_state(),
+            )));
+
             Ok(())
         });
 

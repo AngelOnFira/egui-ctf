@@ -1,2 +1,7 @@
 [build]
 filehash = false
+
+[watch]
+ignore = [
+    "file.db"    
+]

@@ -1,10 +1,18 @@
-use actix::prelude::{Message, Recipient};
+use actix::{prelude::{Message, Recipient}, ResponseActFuture};
 
 use common::{ctf_message::CTFMessage, NetworkMessage};
 use uuid::Uuid;
 
+// The response type returned by the actor future
+pub type OriginalActorResponse = ();
+// The error type returned by the actor future
+pub type MessageError = ();
+// This is the needed result for the DeferredWork message
+// It's a result that combine both Response and Error from the future response.
+pub type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
+
 #[derive(Message)]
-#[rtype(result = "ResponseActFuture<Self, DeferredWorkResult>")]
+#[rtype(result = "Result<(), MessageError>")]
 pub struct Connect {
     pub addr: Recipient<WsActorMessage>,
     pub self_id: Uuid,
