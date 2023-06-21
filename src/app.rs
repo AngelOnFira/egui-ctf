@@ -4,7 +4,7 @@ use common::{
 };
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
-use crate::panels::{frontend::FrontEnd, hacker_list::HackerList, login::LoginPanel};
+use crate::panels::{hacker_list::HackerList, login::LoginPanel};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -14,9 +14,6 @@ pub struct TemplateApp {
 
     #[serde(skip)]
     hacker_list: HackerList,
-
-    #[serde(skip)]
-    frontend: Option<FrontEnd>,
 
     #[serde(skip)]
     connection_state: ConnectionState,
@@ -49,7 +46,6 @@ impl Default for TemplateApp {
         Self {
             // Panels
             login_panel: None,
-            frontend: None,
             hacker_list: HackerList::default(),
             // Other state
             websocket_thread_handle: None,
