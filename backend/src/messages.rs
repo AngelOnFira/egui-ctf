@@ -1,4 +1,7 @@
-use actix::{prelude::{Message, Recipient}, ResponseActFuture};
+use actix::{
+    prelude::{Message, Recipient},
+    ResponseActFuture,
+};
 
 use common::{ctf_message::CTFMessage, NetworkMessage};
 use uuid::Uuid;

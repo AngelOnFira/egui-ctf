@@ -47,7 +47,11 @@ impl MigrationTrait for Migration {
                             .from(Submission::Table, Submission::FkHackerId)
                             .to(Hacker::Table, Hacker::Id),
                     )
-                    .col(ColumnDef::new(Submission::FkChallengeId).big_integer().null())
+                    .col(
+                        ColumnDef::new(Submission::FkChallengeId)
+                            .big_integer()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("submission_challenge_fk")
