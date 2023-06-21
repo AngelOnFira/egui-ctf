@@ -1,10 +1,11 @@
 use common::{
-    ctf_message::{CTFClientState, CTFMessage},
+    ctf_message::{CTFClientState, CTFMessage, ClientUpdate},
     NetworkMessage,
 };
+use core::fmt::Display;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 
-use crate::panels::{hacker_list::HackerList, login::LoginPanel};
+use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -14,6 +15,9 @@ pub struct TemplateApp {
 
     #[serde(skip)]
     hacker_list: HackerList,
+
+    #[serde(skip)]
+    submission_panel: SubmissionPanel,
 
     #[serde(skip)]
     connection_state: ConnectionState,
@@ -41,12 +45,39 @@ pub enum ConnectionState {
     },
 }
 
+impl ConnectionState {
+    /// Send a message to the backend. Return an error if we're not connected to
+    /// the server.
+    pub fn send_message(&mut self, message: NetworkMessage) -> Result<(), ConnectionStateError> {
+        match self {
+            ConnectionState::Connected { ws_sender, .. } => {
+                ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
+                Ok(())
+            }
+            _ => Err(ConnectionStateError::NotConnected),
+        }
+    }
+}
+
+pub enum ConnectionStateError {
+    NotConnected,
+}
+
+impl Display for ConnectionStateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectionStateError::NotConnected => write!(f, "Not connected to server"),
+        }
+    }
+}
+
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
             // Panels
             login_panel: None,
             hacker_list: HackerList::default(),
+            submission_panel: SubmissionPanel::default(),
             // Other state
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
@@ -56,34 +87,9 @@ impl Default for TemplateApp {
 }
 
 impl TemplateApp {
-    /// Called once before the first frame.
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        // Even if we can load state, we still need to get the websocket thread
-        // handle
-
-        // // Start a thread to handle websocket events
-        // // let (ws_tx, ws_rx) = std::sync::mpsc::channel();
-        // let (mut sender, receiver) = ewebsock::connect("wss://ws.postman-echo.com/raw").unwrap();
-
-        // sender.send(ewebsock::WsMessage::Text("Hellioooo!".into()));
-        // let ws_thread = wasm_bindgen_futures::spawn_local(move || {
-        //     while let Some(event) = receiver.try_recv() {
-        //         panic!("Received {:?}", event);
-        //     }
-        // });
-
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        // if let Some(storage) = cc.storage {
-        //     return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        // }
-
         Self {
             websocket_thread_handle: None,
-            // websocket_thread_handle: Some(ws_thread),
             ..Default::default()
         }
     }
@@ -108,22 +114,9 @@ impl TemplateApp {
 }
 
 impl eframe::App for TemplateApp {
-    // /// Called by the frame work to save state before shutdown.
-    // fn save(&mut self, storage: &mut dyn Storage) {
-    //     eframe::set_value(storage, eframe::APP_KEY, self);
-    // }
-
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // let Self {
-        //     label,
-        //     value,
-        //     login_panel,
-        //     connection_state,
-        //     ..
-        // } = self;
-
         match &self.connection_state {
             ConnectionState::Disconnected => {
                 self.connect(ctx.clone());
@@ -145,6 +138,14 @@ impl eframe::App for TemplateApp {
                                     CTFMessage::CTFClientState(ctf_client_state) => {
                                         self.client_state.ctf_state = Some(ctf_client_state);
                                     }
+                                    // The client can't receive submissions
+                                    CTFMessage::SubmitFlag(_) => unreachable!(),
+                                    // Events that the server sends and we
+                                    // should display
+                                    CTFMessage::ClientUpdate(event) => match event {
+                                        ClientUpdate::ScoredPoint => todo!(),
+                                        ClientUpdate::TeamScoredPoint => todo!(),
+                                    },
                                 }
                             }
                             _ => {}
@@ -155,34 +156,10 @@ impl eframe::App for TemplateApp {
             _ => {}
         };
 
-        // Examples of how to create different panels and windows.
-        // Pick whichever suits you.
-        // Tip: a good default choice is to just keep the `CentralPanel`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
-        // #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
-        // egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-        //     // The top panel is often a good place for a menu bar:
-        //     egui::menu::bar(ui, |ui| {
-        //         ui.menu_button("File", |ui| {
-        //             if ui.button("Quit").clicked() {
-        //                 _frame.close();
-        //             }
-        //         });
-        //     });
-        // });
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
 
-            // ui.horizontal(|ui| {
-            //     ui.label("Write something: ");
-            //     ui.text_edit_singleline(&mut self.label);
-            // });
-
-            // ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            // if ui.button("Increment").clicked() {
-            //     self.value += 1.0;
-            // }
+            // TODO: put stuff here to switch windows?
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
@@ -213,17 +190,11 @@ impl eframe::App for TemplateApp {
             // Check if we're connected to the server
             if let ConnectionState::Connected { .. } = &self.connection_state {
                 // Show the hacker list
-                self.hacker_list.show(ctx, &self.client_state)
+                self.hacker_list.show(ctx, &self.client_state);
+
+                // Show the submission panel
+                self.submission_panel.show(ctx, &mut self.connection_state);
             }
-
-            // // Add the login panel
-            // if let Some(login_panel) = &mut self.login_panel {
-            //     login_panel.show(ctx, &mut true);
-            // }
-
-            // if let Some(frontend) = &mut self.frontend {
-            //     frontend.ui(ctx);
-            // }
         });
 
         if false {
@@ -235,27 +206,4 @@ impl eframe::App for TemplateApp {
             });
         }
     }
-
-    // fn setup(
-    //     &mut self,
-    //     _ctx: &egui::Context,
-    //     frame: &Frame,
-    //     _storage: Option<&dyn Storage>,
-    // ) {
-    //     if let Some(web_info) = &frame.info().web_info {
-    //         // allow `?url=` query param
-    //         if let Some(url) = web_info.location.query_map.get("url") {
-    //             self.url = url.clone();
-    //         }
-    //     }
-    //     if self.url.is_empty() {
-    //         self.url = "wss://echo.websocket.events/.ws".into(); // echo server
-    //     }
-
-    //     self.connect(frame.clone());
-    // }
-
-    // fn name(&self) -> &str {
-    //     todo!()
-    // }
 }

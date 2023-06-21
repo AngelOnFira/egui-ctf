@@ -105,10 +105,7 @@ impl StreamHandler<Result<Message, ws::ProtocolError>> for WsConn {
                         // pass it to the room to be handled.
                         if let Some(room) = &self.room {
                             if let NetworkMessage::CTFMessage(message) = message {
-                                room.do_send(GameRoomMessage {
-                                    id: self.id,
-                                    ctf_message: message,
-                                });
+                                // TODO: Handle the message
                             }
                         }
                     }

@@ -5,10 +5,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CTFMessage {
+/// A subset of the information stored in the CTF state, to be passed to the client
     CTFClientState(CTFClientState),
+    SubmitFlag(String),
+    /// Tell a specific client that something that matters to them has happened
+    /// (They submitted a flag correctly a team member went offline, etc.)
+    ClientUpdate(ClientUpdate),
 }
-
-pub trait CTFMessageTag {}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CTFState {
@@ -28,6 +31,7 @@ impl CTFState {
     pub fn get_client_state(&self) -> CTFClientState {
         CTFClientState {
             hacker_teams: self.hacker_teams.clone(),
+            challenges: Vec::new()
         }
     }
 
@@ -74,10 +78,10 @@ impl CTFState {
     }
 }
 
-/// A subset of the information stored in the CTF state, to be passed to the client
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CTFClientState {
     pub hacker_teams: Vec<HackerTeam>,
+    pub challenges: Vec<CTFChallenge>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -91,4 +95,13 @@ pub struct Hacker {
     pub name: String,
 }
 
-impl CTFMessageTag for CTFState {}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CTFChallenge {}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ClientUpdate {
+    /// This client scored a point
+    ScoredPoint,
+    /// This client's team scored a point
+    TeamScoredPoint,
+}
