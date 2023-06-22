@@ -1,7 +1,7 @@
 use entity::entities::challenge;
 use sea_orm_migration::{
     prelude::*,
-    sea_orm::{ActiveModelTrait, Set, TransactionTrait},
+    sea_orm::{ActiveModelTrait, Set},
 };
 
 #[derive(DeriveMigrationName)]

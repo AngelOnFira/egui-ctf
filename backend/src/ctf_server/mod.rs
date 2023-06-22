@@ -1,5 +1,5 @@
 use crate::messages::{
-    ActorRequest, CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest,
+    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest,
     WsActorMessage,
 };
 use actix::{
@@ -7,17 +7,17 @@ use actix::{
     ActorFutureExt, AsyncContext, ResponseActFuture,
 };
 use common::{
-    ctf_message::{self, CTFMessage, CTFState, ClientUpdate, Hacker, HackerTeam},
-    ClientId, NetworkMessage, RoomId,
+    ctf_message::{CTFMessage, CTFState, ClientUpdate},
+    ClientId, NetworkMessage,
 };
 use entity::entities::{challenge, hacker, team};
 use fake::{faker::internet::en::Username, Fake};
-use itertools::Itertools;
+
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
 use std::{collections::HashMap, time::Duration};
-use uuid::Uuid;
+
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
 pub type GameRoomSocket = Recipient<CTFRoomMessage>;
@@ -100,7 +100,7 @@ impl Handler<Disconnect> for CTFServer {
 impl Handler<Connect> for CTFServer {
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
-    fn handle(&mut self, msg: Connect, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Connect, _ctx: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
         self.sessions.insert(msg.self_id, msg.addr.clone());
 
@@ -124,7 +124,7 @@ impl Handler<Connect> for CTFServer {
                 ..Default::default()
             };
 
-            let hacker: hacker::Model = hacker
+            let _hacker: hacker::Model = hacker
                 .insert(&db_clone)
                 .await
                 .expect("Failed to insert hacker");
@@ -155,7 +155,7 @@ impl Handler<Connect> for CTFServer {
 impl Handler<IncomingCTFRequest> for CTFServer {
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
-    fn handle(&mut self, msg: IncomingCTFRequest, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: IncomingCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         let db_clone = self.db.clone();
         let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().clone();
 
@@ -205,7 +205,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
         let fut = actix::fut::wrap_future::<_, Self>(fut);
 
-        let fut = fut.map(|result, actor, _ctx| Ok(()));
+        let fut = fut.map(|_result, _actor, _ctx| Ok(()));
 
         // Return the future to be run
         Box::pin(fut)

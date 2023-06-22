@@ -1,8 +1,7 @@
 use serenity::builder::CreateApplicationCommand;
 use serenity::model::prelude::command::CommandOptionType;
 use serenity::model::prelude::interaction::application_command::{
-    CommandDataOption,
-    CommandDataOptionValue,
+    CommandDataOption, CommandDataOptionValue,
 };
 
 pub fn run(options: &[CommandDataOption]) -> String {
@@ -21,11 +20,14 @@ pub fn run(options: &[CommandDataOption]) -> String {
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command.name("id").description("Get a user id").create_option(|option| {
-        option
-            .name("id")
-            .description("The user to lookup")
-            .kind(CommandOptionType::User)
-            .required(true)
-    })
+    command
+        .name("id")
+        .description("Get a user id")
+        .create_option(|option| {
+            option
+                .name("id")
+                .description("The user to lookup")
+                .kind(CommandOptionType::User)
+                .required(true)
+        })
 }

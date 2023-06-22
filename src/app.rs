@@ -3,7 +3,7 @@ use common::{
     NetworkMessage,
 };
 use core::fmt::Display;
-use egui_notify::{Toast, Toasts};
+use egui_notify::{Toasts};
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 use std::time::Duration;
 

@@ -1,6 +1,6 @@
 use crate::{
-    ctf_server::{CTFServer, GameRoomSocket},
-    messages::{CTFRoomMessage, Connect, Disconnect, IncomingCTFRequest, WsActorMessage},
+    ctf_server::{CTFServer},
+    messages::{Connect, Disconnect, IncomingCTFRequest, WsActorMessage},
 };
 use actix::{
     fut, Actor, ActorContext, ActorFutureExt, Addr, AsyncContext, ContextFutureSpawner, Handler,
