@@ -1,5 +1,5 @@
 use crate::{
-    ctf_server::{CTFServer},
+    ctf_server::CTFServer,
     messages::{Connect, Disconnect, IncomingCTFRequest, WsActorMessage},
 };
 use actix::{

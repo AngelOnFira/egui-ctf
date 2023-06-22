@@ -1,9 +1,6 @@
-use actix::{
-    prelude::{Message, Recipient},
-};
+use actix::prelude::{Message, Recipient};
 
 use common::{ctf_message::CTFMessage, ClientId, NetworkMessage};
-
 
 // The response type returned by the actor future
 pub type OriginalActorResponse = ();

@@ -4,7 +4,7 @@ use std::env;
 
 use sea_orm::{Database, DatabaseConnection};
 use serenity::async_trait;
-use serenity::model::application::command::Command;
+
 use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
@@ -21,9 +21,6 @@ impl EventHandler for Handler {
             println!("Received command interaction: {:#?}", command);
 
             let content = match command.data.name.as_str() {
-                "ping" => commands::ping::run(&command.data.options),
-                "id" => commands::id::run(&command.data.options),
-                "attachmentinput" => commands::attachmentinput::run(&command.data.options),
                 "token" => {
                     commands::token::run(
                         &command.data.options,
@@ -66,16 +63,6 @@ impl EventHandler for Handler {
         println!(
             "I now have the following guild slash commands: {:#?}",
             commands
-        );
-
-        let guild_command = Command::create_global_application_command(&ctx.http, |command| {
-            commands::wonderful_command::register(command)
-        })
-        .await;
-
-        println!(
-            "I created the following global slash command: {:#?}",
-            guild_command
         );
     }
 }
