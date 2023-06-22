@@ -4,6 +4,7 @@ mod m20230620_142127_team;
 mod m20230620_143222_hacker;
 mod m20230620_143225_challenge;
 mod m20230620_143309_submission;
+mod m20230622_165808_login_token;
 
 pub struct Migrator;
 
@@ -15,6 +16,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230620_143222_hacker::Migration),
             Box::new(m20230620_143225_challenge::Migration),
             Box::new(m20230620_143309_submission::Migration),
+            Box::new(m20230622_165808_login_token::Migration),
         ]
     }
 }

@@ -4,16 +4,16 @@ use sea_orm_migration::prelude::*;
 pub struct Migration;
 
 #[derive(Iden)]
-enum Hacker {
+enum Token {
     Table,
     Id,
-    Username,
-    DiscordId,
-    FkTeamId,
+    Token,
+    Expiry,
+    FkHackerId,
 }
 
 #[derive(Iden)]
-enum Team {
+enum Hacker {
     Table,
     Id,
 }
@@ -24,22 +24,23 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Hacker::Table)
+                    .table(Token::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Hacker::Id)
+                        ColumnDef::new(Token::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Hacker::Username).string().not_null())
-                    .col(ColumnDef::new(Hacker::FkTeamId).big_integer().null())
+                    .col(ColumnDef::new(Token::Token).string().not_null())
+                    .col(ColumnDef::new(Token::Expiry).date_time().not_null())
+                    .col(ColumnDef::new(Token::FkHackerId).big_integer().null())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("hacker_team_fk")
-                            .from(Hacker::Table, Hacker::FkTeamId)
-                            .to(Team::Table, Team::Id),
+                            .name("submission_hacker_fk")
+                            .from(Token::Table, Token::FkHackerId)
+                            .to(Hacker::Table, Hacker::Id),
                     )
                     .to_owned(),
             )
@@ -48,7 +49,7 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Hacker::Table).to_owned())
+            .drop_table(Table::drop().table(Token::Table).to_owned())
             .await
     }
 }

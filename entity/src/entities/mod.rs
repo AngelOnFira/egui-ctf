@@ -6,3 +6,4 @@ pub mod challenge;
 pub mod hacker;
 pub mod submission;
 pub mod team;
+pub mod token;

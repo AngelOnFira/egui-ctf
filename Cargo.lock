@@ -1488,6 +1488,7 @@ dependencies = [
 name = "discord-bot"
 version = "0.1.0"
 dependencies = [
+ "sea-orm",
  "serenity",
  "tokio",
 ]

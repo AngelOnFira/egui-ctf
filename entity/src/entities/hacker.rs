@@ -24,6 +24,8 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Team,
+    #[sea_orm(has_many = "super::token::Entity")]
+    Token,
 }
 
 impl Related<super::submission::Entity> for Entity {
@@ -35,6 +37,12 @@ impl Related<super::submission::Entity> for Entity {
 impl Related<super::team::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Team.def()
+    }
+}
+
+impl Related<super::token::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Token.def()
     }
 }
 

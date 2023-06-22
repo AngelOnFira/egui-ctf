@@ -2,6 +2,7 @@ mod commands;
 
 use std::env;
 
+use sea_orm::{Database, DatabaseConnection};
 use serenity::async_trait;
 use serenity::model::application::command::Command;
 use serenity::model::application::interaction::{Interaction, InteractionResponseType};
@@ -9,7 +10,9 @@ use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
 use serenity::prelude::*;
 
-struct Handler;
+struct Handler {
+    db: DatabaseConnection,
+}
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -49,11 +52,7 @@ impl EventHandler for Handler {
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
-                .create_application_command(|command| commands::ping::register(command))
-                .create_application_command(|command| commands::id::register(command))
-                .create_application_command(|command| commands::welcome::register(command))
-                .create_application_command(|command| commands::numberinput::register(command))
-                .create_application_command(|command| commands::attachmentinput::register(command))
+                .create_application_command(|command| commands::token::register(command))
         })
         .await;
 
@@ -79,9 +78,13 @@ async fn main() {
     // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
+    let db = Database::connect("sqlite://../file.db").await.unwrap();
+
     // Build our client.
     let mut client = Client::builder(token, GatewayIntents::empty())
-        .event_handler(Handler)
+        .event_handler(Handler{
+            db
+        })
         .await
         .expect("Error creating client");
 

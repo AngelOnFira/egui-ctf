@@ -1,6 +1,5 @@
 use crate::messages::{
-    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest,
-    WsActorMessage,
+    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
 };
 use actix::{
     prelude::{Actor, Context, Handler, Recipient},
@@ -17,7 +16,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
 use std::{collections::HashMap, time::Duration};
-
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
 pub type GameRoomSocket = Recipient<CTFRoomMessage>;
