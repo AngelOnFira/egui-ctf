@@ -150,6 +150,8 @@ impl eframe::App for TemplateApp {
                                     }
                                     // The client can't receive submissions
                                     CTFMessage::SubmitFlag(_) => unreachable!(),
+                                    // The client can't receive login requests
+                                    CTFMessage::Login(_) => unreachable!(),
                                     // Events that the server sends and we
                                     // should display
                                     CTFMessage::ClientUpdate(event) => match event {

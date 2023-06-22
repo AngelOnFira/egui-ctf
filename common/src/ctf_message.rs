@@ -11,6 +11,8 @@ pub enum CTFMessage {
     /// Tell a specific client that something that matters to them has happened
     /// (They submitted a flag correctly a team member went offline, etc.)
     ClientUpdate(ClientUpdate),
+    /// Login token being submitted
+    Login(String),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

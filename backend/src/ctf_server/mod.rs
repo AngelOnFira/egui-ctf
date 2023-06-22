@@ -9,7 +9,7 @@ use common::{
     ctf_message::{CTFMessage, CTFState, ClientUpdate},
     ClientId, NetworkMessage,
 };
-use entity::entities::{challenge, hacker, team};
+use entity::entities::{challenge, hacker, team, token};
 use fake::{faker::internet::en::Username, Fake};
 
 use sea_orm::{
@@ -22,8 +22,28 @@ pub type GameRoomSocket = Recipient<CTFRoomMessage>;
 
 pub struct CTFServer {
     db: DatabaseConnection,
-    sessions: HashMap<ClientId, WsClientSocket>,
+    sessions: HashMap<ClientId, Session>,
     pub ctf_state: CTFState,
+}
+
+pub struct Session {
+    auth: Auth,
+    pub socket: WsClientSocket,
+}
+
+impl Session {
+    pub fn new(socket: WsClientSocket) -> Self {
+        Session {
+            auth: Auth::Unauthenticated,
+            socket,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum Auth {
+    Unauthenticated,
+    Hacker { discord_id: String },
 }
 
 impl CTFServer {
@@ -55,7 +75,9 @@ impl Actor for CTFServer {
 impl CTFServer {
     fn send_message(&self, message: NetworkMessage, id_to: &ClientId) {
         if let Some(socket_recipient) = self.sessions.get(id_to) {
-            let _ = socket_recipient.do_send(WsActorMessage::IncomingMessage(message));
+            let _ = socket_recipient
+                .socket
+                .do_send(WsActorMessage::IncomingMessage(message));
         } else {
             println!("attempting to send message but couldn't find user id.");
         }
@@ -67,7 +89,9 @@ impl CTFServer {
 
     fn broadcast_message(&self, message: NetworkMessage) {
         for (_, socket_recipient) in self.sessions.iter() {
-            let _ = socket_recipient.do_send(WsActorMessage::IncomingMessage(message.clone()));
+            let _ = socket_recipient
+                .socket
+                .do_send(WsActorMessage::IncomingMessage(message.clone()));
         }
     }
 }
@@ -100,7 +124,8 @@ impl Handler<Connect> for CTFServer {
 
     fn handle(&mut self, msg: Connect, _ctx: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
-        self.sessions.insert(msg.self_id, msg.addr.clone());
+        self.sessions
+            .insert(msg.self_id, Session::new(msg.addr.clone()));
 
         let db_clone = self.db.clone();
         let fut = async move {
@@ -155,24 +180,21 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
     fn handle(&mut self, msg: IncomingCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         let db_clone = self.db.clone();
-        let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().clone();
+        let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
+        let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
 
         let fut = async move {
-            match msg.ctf_message {
-                CTFMessage::CTFClientState(_) => todo!(),
-                CTFMessage::SubmitFlag(flag) => {
-                    // Check the database to see if there are any challenges with
-                    // this flag
-                    let correct_flag_challenges: Vec<challenge::Model> = challenge::Entity::find()
-                        .filter(challenge::Column::Flag.eq(&flag))
-                        .all(&db_clone)
-                        .await
-                        .expect("Failed to get challenges with flag");
-
-                    // If they solved a challenge, send them a message that they
-                    // solved a challenge
-                    for challenge in &correct_flag_challenges {
-                        let recipient_clone = recipient_clone.clone();
+            // Check if this client is authenticated
+            match auth {
+                Auth::Unauthenticated => {
+                    if let CTFMessage::Login(token) = msg.ctf_message {
+                        // Find any tokens in the database that match this token
+                        let token = token::Entity::find()
+                            .filter(token::Column::Token.eq(&token))
+                            .one(&db_clone)
+                            .await
+                            .expect("Failed to get token");
+                        
                         CTFServer::send_message_associated(
                             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                                 ClientUpdate::ScoredPoint(format!(
@@ -183,21 +205,52 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             recipient_clone,
                         )
                     }
+                },
+                Auth::Hacker { discord_id } => {
+                    match msg.ctf_message {
+                        CTFMessage::CTFClientState(_) => todo!(),
+                        CTFMessage::SubmitFlag(flag) => {
+                            // Check the database to see if there are any challenges with
+                            // this flag
+                            let correct_flag_challenges: Vec<challenge::Model> =
+                                challenge::Entity::find()
+                                    .filter(challenge::Column::Flag.eq(&flag))
+                                    .all(&db_clone)
+                                    .await
+                                    .expect("Failed to get challenges with flag");
 
-                    // Otherwise, tell them they didn't solve a challenge
-                    if correct_flag_challenges.is_empty() {
-                        let recipient_clone = recipient_clone.clone();
-                        CTFServer::send_message_associated(
-                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                                ClientUpdate::ScoredPoint(
-                                    "That flag didn't solve any challenges.".to_string(),
-                                ),
-                            )),
-                            recipient_clone,
-                        )
+                            // If they solved a challenge, send them a message that they
+                            // solved a challenge
+                            for challenge in &correct_flag_challenges {
+                                let recipient_clone = recipient_clone.clone();
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::ScoredPoint(format!(
+                                            "You solved {} for {} points!",
+                                            challenge.title, challenge.points
+                                        )),
+                                    )),
+                                    recipient_clone,
+                                )
+                            }
+
+                            // Otherwise, tell them they didn't solve a challenge
+                            if correct_flag_challenges.is_empty() {
+                                let recipient_clone = recipient_clone.clone();
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::ScoredPoint(
+                                            "That flag didn't solve any challenges.".to_string(),
+                                        ),
+                                    )),
+                                    recipient_clone,
+                                )
+                            }
+                        }
+                        CTFMessage::ClientUpdate(_) => todo!(),
+                        CTFMessage::Login(_) => todo!(),
                     }
                 }
-                CTFMessage::ClientUpdate(_) => todo!(),
             }
         };
 
