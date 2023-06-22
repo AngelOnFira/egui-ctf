@@ -3,7 +3,7 @@ use actix::{
     ResponseActFuture,
 };
 
-use common::{ctf_message::CTFMessage, NetworkMessage};
+use common::{ctf_message::CTFMessage, ClientId, NetworkMessage};
 use uuid::Uuid;
 
 // The response type returned by the actor future
@@ -18,13 +18,13 @@ pub type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
 #[rtype(result = "Result<(), MessageError>")]
 pub struct Connect {
     pub addr: Recipient<WsActorMessage>,
-    pub self_id: Uuid,
+    pub self_id: ClientId,
 }
 
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Disconnect {
-    pub id: Uuid,
+    pub id: ClientId,
 }
 
 #[derive(Message)]
@@ -40,11 +40,18 @@ pub enum WsActorMessage {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct GameRoomMessage {
-    pub id: Uuid,
+pub struct CTFRoomMessage {
+    pub id: ClientId,
     pub ctf_message: CTFMessage,
 }
 
 #[derive(Message)]
 #[rtype(result = "()")]
 pub enum ActorRequest {}
+
+#[derive(Message)]
+#[rtype(result = "Result<(), MessageError>")]
+pub struct IncomingCTFRequest {
+    pub id: ClientId,
+    pub ctf_message: CTFMessage,
+}

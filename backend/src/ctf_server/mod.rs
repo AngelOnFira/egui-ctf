@@ -1,23 +1,26 @@
 use crate::messages::{
-    ActorRequest, Connect, DeferredWorkResult, Disconnect, GameRoomMessage, WsActorMessage,
+    ActorRequest, CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest,
+    WsActorMessage,
 };
 use actix::{
     prelude::{Actor, Context, Handler, Recipient},
     ActorFutureExt, AsyncContext, ResponseActFuture,
 };
 use common::{
-    ctf_message::{self, CTFMessage, CTFState, Hacker, HackerTeam},
+    ctf_message::{self, CTFMessage, CTFState, ClientUpdate, Hacker, HackerTeam},
     ClientId, NetworkMessage, RoomId,
 };
-use entity::entities::{hacker, team};
+use entity::entities::{challenge, hacker, team};
 use fake::{faker::internet::en::Username, Fake};
 use itertools::Itertools;
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
+};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
-pub type GameRoomSocket = Recipient<GameRoomMessage>;
+pub type GameRoomSocket = Recipient<CTFRoomMessage>;
 
 pub struct CTFServer {
     db: DatabaseConnection,
@@ -52,12 +55,16 @@ impl Actor for CTFServer {
 }
 
 impl CTFServer {
-    fn send_message(&self, message: NetworkMessage, id_to: &Uuid) {
+    fn send_message(&self, message: NetworkMessage, id_to: &ClientId) {
         if let Some(socket_recipient) = self.sessions.get(id_to) {
             let _ = socket_recipient.do_send(WsActorMessage::IncomingMessage(message));
         } else {
             println!("attempting to send message but couldn't find user id.");
         }
+    }
+
+    fn send_message_associated(message: NetworkMessage, to: WsClientSocket) {
+        to.do_send(WsActorMessage::IncomingMessage(message));
     }
 
     fn broadcast_message(&self, message: NetworkMessage) {
@@ -91,7 +98,6 @@ impl Handler<Disconnect> for CTFServer {
 }
 
 impl Handler<Connect> for CTFServer {
-    // type Result = ();
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
     fn handle(&mut self, msg: Connect, ctx: &mut Context<Self>) -> Self::Result {
@@ -140,6 +146,66 @@ impl Handler<Connect> for CTFServer {
 
             Ok(())
         });
+
+        // Return the future to be run
+        Box::pin(fut)
+    }
+}
+
+impl Handler<IncomingCTFRequest> for CTFServer {
+    type Result = ResponseActFuture<Self, DeferredWorkResult>;
+
+    fn handle(&mut self, msg: IncomingCTFRequest, ctx: &mut Self::Context) -> Self::Result {
+        let db_clone = self.db.clone();
+        let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().clone();
+
+        let fut = async move {
+            match msg.ctf_message {
+                CTFMessage::CTFClientState(_) => todo!(),
+                CTFMessage::SubmitFlag(flag) => {
+                    // Check the database to see if there are any challenges with
+                    // this flag
+                    let correct_flag_challenges: Vec<challenge::Model> = challenge::Entity::find()
+                        .filter(challenge::Column::Flag.contains(&flag))
+                        .all(&db_clone)
+                        .await
+                        .expect("Failed to get challenges with flag");
+
+                    // If they solved a challenge, send them a message that they
+                    // solved a challenge
+                    for challenge in &correct_flag_challenges {
+                        let recipient_clone = recipient_clone.clone();
+                        CTFServer::send_message_associated(
+                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                ClientUpdate::ScoredPoint(format!(
+                                    "You solved {} for {} points!",
+                                    challenge.title, challenge.points
+                                )),
+                            )),
+                            recipient_clone,
+                        )
+                    }
+
+                    // Otherwise, tell them they didn't solve a challenge
+                    if correct_flag_challenges.is_empty() {
+                        let recipient_clone = recipient_clone.clone();
+                        CTFServer::send_message_associated(
+                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                ClientUpdate::ScoredPoint(
+                                    "That flag didn't solve any challenges.".to_string(),
+                                ),
+                            )),
+                            recipient_clone,
+                        )
+                    }
+                }
+                CTFMessage::ClientUpdate(_) => todo!(),
+            }
+        };
+
+        let fut = actix::fut::wrap_future::<_, Self>(fut);
+
+        let fut = fut.map(|result, actor, _ctx| Ok(()));
 
         // Return the future to be run
         Box::pin(fut)

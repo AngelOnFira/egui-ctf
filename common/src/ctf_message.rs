@@ -101,7 +101,7 @@ pub struct CTFChallenge {}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientUpdate {
     /// This client scored a point
-    ScoredPoint,
+    ScoredPoint(String),
     /// This client's team scored a point
     TeamScoredPoint,
 }

@@ -1,4 +1,8 @@
-use sea_orm_migration::prelude::*;
+use entity::entities::challenge;
+use sea_orm_migration::{
+    prelude::*,
+    sea_orm::{ActiveModelTrait, Set, TransactionTrait},
+};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -40,7 +44,39 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Challenge::Author).string().not_null())
                     .to_owned(),
             )
-            .await
+            .await?;
+
+        let db = manager.get_connection();
+        // let transaction = db.begin().await?;
+
+        // Add sample challenges
+        challenge::ActiveModel {
+            title: Set("Challenge 1".to_owned()),
+            category: Set("Category 1".to_owned()),
+            description: Set("Description 1".to_owned()),
+            link: Set("Link 1".to_owned()),
+            points: Set(100),
+            flag: Set("flag{test1}".to_owned()),
+            author: Set("Author 1".to_owned()),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
+
+        challenge::ActiveModel {
+            title: Set("Challenge 2".to_owned()),
+            category: Set("Category 2".to_owned()),
+            description: Set("Description 2".to_owned()),
+            link: Set("Link 2".to_owned()),
+            points: Set(200),
+            flag: Set("flag{test2}".to_owned()),
+            author: Set("Author 2".to_owned()),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
+
+        Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {

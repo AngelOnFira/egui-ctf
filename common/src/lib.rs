@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub mod ctf_message;
-pub mod room;
 
 pub type ClientId = Uuid;
 pub type RoomId = Uuid;
@@ -13,7 +12,7 @@ pub type RoomId = Uuid;
 pub enum NetworkMessage {
     Heartbeat,
     Time(u64),
-    UserDisconnected(Uuid),
+    UserDisconnected(ClientId),
     CTFMessage(CTFMessage),
 }
 

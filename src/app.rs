@@ -143,7 +143,7 @@ impl eframe::App for TemplateApp {
                                     // Events that the server sends and we
                                     // should display
                                     CTFMessage::ClientUpdate(event) => match event {
-                                        ClientUpdate::ScoredPoint => todo!(),
+                                        ClientUpdate::ScoredPoint(String) => todo!(),
                                         ClientUpdate::TeamScoredPoint => todo!(),
                                     },
                                 }

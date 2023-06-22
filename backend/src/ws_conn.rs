@@ -1,6 +1,6 @@
 use crate::{
     ctf_server::{CTFServer, GameRoomSocket},
-    messages::{Connect, Disconnect, GameRoomMessage, WsActorMessage},
+    messages::{CTFRoomMessage, Connect, Disconnect, IncomingCTFRequest, WsActorMessage},
 };
 use actix::{
     fut, Actor, ActorContext, ActorFutureExt, Addr, AsyncContext, ContextFutureSpawner, Handler,
@@ -8,7 +8,7 @@ use actix::{
 };
 use actix_web_actors::ws::{self, Message};
 
-use common::NetworkMessage;
+use common::{ClientId, NetworkMessage};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -16,19 +16,17 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(1);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(3);
 
 pub struct WsConn {
-    room: Option<GameRoomSocket>,
-    game_server_addr: Addr<CTFServer>,
+    ctf_server_addr: Addr<CTFServer>,
     hb: Instant,
-    id: Uuid,
+    id: ClientId,
 }
 
 impl WsConn {
     pub fn new(game_server: Addr<CTFServer>) -> WsConn {
         WsConn {
             id: Uuid::new_v4(),
-            room: None,
             hb: Instant::now(),
-            game_server_addr: game_server,
+            ctf_server_addr: game_server,
         }
     }
 }
@@ -40,7 +38,7 @@ impl Actor for WsConn {
         self.hb(ctx);
 
         let addr = ctx.address();
-        self.game_server_addr
+        self.ctf_server_addr
             .send(Connect {
                 addr: addr.recipient(),
                 self_id: self.id,
@@ -57,7 +55,7 @@ impl Actor for WsConn {
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
-        self.game_server_addr.do_send(Disconnect { id: self.id });
+        self.ctf_server_addr.do_send(Disconnect { id: self.id });
         Running::Stop
     }
 }
@@ -67,7 +65,7 @@ impl WsConn {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
             if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
                 println!("Disconnecting failed heartbeat");
-                act.game_server_addr.do_send(Disconnect { id: act.id });
+                act.ctf_server_addr.do_send(Disconnect { id: act.id });
                 ctx.stop();
                 return;
             }
@@ -101,12 +99,13 @@ impl StreamHandler<Result<Message, ws::ProtocolError>> for WsConn {
                         // Deserialize as a NetworkMessage
                         let message: NetworkMessage = serde_json::from_str(&text).unwrap();
 
-                        // If we're in a room and the message is a GameMessage,
-                        // pass it to the room to be handled.
-                        if let Some(room) = &self.room {
-                            if let NetworkMessage::CTFMessage(message) = message {
-                                // TODO: Handle the message
-                            }
+                        if let NetworkMessage::CTFMessage(message) = message {
+                            // Send the message to the CTFServer actor to be
+                            // handled
+                            self.ctf_server_addr.do_send(IncomingCTFRequest {
+                                ctf_message: message,
+                                id: self.id,
+                            })
                         }
                     }
                     // If we get a pong back, update the heartbeat
