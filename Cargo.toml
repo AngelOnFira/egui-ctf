@@ -11,6 +11,7 @@ members = [
     "common",
     "migration",
     "entity",
+    "discord-bot",
 ]
 
 [dependencies]
