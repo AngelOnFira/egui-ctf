@@ -6,9 +6,8 @@ pub struct Migration;
 #[derive(Iden)]
 enum Hacker {
     Table,
-    Id,
-    Username,
     DiscordId,
+    Username,
     FkTeamId,
 }
 
@@ -27,10 +26,9 @@ impl MigrationTrait for Migration {
                     .table(Hacker::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Hacker::Id)
-                            .integer()
+                        ColumnDef::new(Hacker::DiscordId)
+                            .string()
                             .not_null()
-                            .auto_increment()
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Hacker::Username).string().not_null())

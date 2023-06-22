@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub flag: String,
-    pub fk_hacker_id: Option<i32>,
+    pub fk_hacker_id: Option<String>,
     pub fk_challenge_id: Option<i32>,
 }
 
@@ -26,7 +26,7 @@ pub enum Relation {
     #[sea_orm(
         belongs_to = "super::hacker::Entity",
         from = "Column::FkHackerId",
-        to = "super::hacker::Column::Id",
+        to = "super::hacker::Column::DiscordId",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]

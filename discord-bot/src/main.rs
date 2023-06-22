@@ -24,6 +24,14 @@ impl EventHandler for Handler {
                 "ping" => commands::ping::run(&command.data.options),
                 "id" => commands::id::run(&command.data.options),
                 "attachmentinput" => commands::attachmentinput::run(&command.data.options),
+                "token" => {
+                    commands::token::run(
+                        &command.data.options,
+                        self.db.clone(),
+                        &command.member.as_ref().unwrap().user.id,
+                    )
+                    .await
+                }
                 _ => "not implemented :(".to_string(),
             };
 
@@ -51,8 +59,7 @@ impl EventHandler for Handler {
         );
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-            commands
-                .create_application_command(|command| commands::token::register(command))
+            commands.create_application_command(|command| commands::token::register(command))
         })
         .await;
 
@@ -82,9 +89,7 @@ async fn main() {
 
     // Build our client.
     let mut client = Client::builder(token, GatewayIntents::empty())
-        .event_handler(Handler{
-            db
-        })
+        .event_handler(Handler { db })
         .await
         .expect("Error creating client");
 

@@ -15,7 +15,7 @@ enum Token {
 #[derive(Iden)]
 enum Hacker {
     Table,
-    Id,
+    DiscordId,
 }
 
 #[async_trait::async_trait]
@@ -35,12 +35,12 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Token::Token).string().not_null())
                     .col(ColumnDef::new(Token::Expiry).date_time().not_null())
-                    .col(ColumnDef::new(Token::FkHackerId).big_integer().null())
+                    .col(ColumnDef::new(Token::FkHackerId).string().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("submission_hacker_fk")
                             .from(Token::Table, Token::FkHackerId)
-                            .to(Hacker::Table, Hacker::Id),
+                            .to(Hacker::Table, Hacker::DiscordId),
                     )
                     .to_owned(),
             )

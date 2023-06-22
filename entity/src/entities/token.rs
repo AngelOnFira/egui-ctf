@@ -10,7 +10,7 @@ pub struct Model {
     pub id: i32,
     pub token: String,
     pub expiry: String,
-    pub fk_hacker_id: Option<i32>,
+    pub fk_hacker_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -18,7 +18,7 @@ pub enum Relation {
     #[sea_orm(
         belongs_to = "super::hacker::Entity",
         from = "Column::FkHackerId",
-        to = "super::hacker::Column::Id",
+        to = "super::hacker::Column::DiscordId",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]

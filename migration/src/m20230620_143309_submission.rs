@@ -15,7 +15,7 @@ enum Submission {
 #[derive(Iden)]
 enum Hacker {
     Table,
-    Id,
+    DiscordId,
 }
 
 #[derive(Iden)]
@@ -40,12 +40,12 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Submission::Flag).string().not_null())
-                    .col(ColumnDef::new(Submission::FkHackerId).big_integer().null())
+                    .col(ColumnDef::new(Submission::FkHackerId).string().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("submission_hacker_fk")
                             .from(Submission::Table, Submission::FkHackerId)
-                            .to(Hacker::Table, Hacker::Id),
+                            .to(Hacker::Table, Hacker::DiscordId),
                     )
                     .col(
                         ColumnDef::new(Submission::FkChallengeId)
