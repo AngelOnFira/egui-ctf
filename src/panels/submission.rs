@@ -1,4 +1,4 @@
-use common::{NetworkMessage, ctf_message::CTFMessage};
+use common::{ctf_message::CTFMessage, NetworkMessage};
 
 use crate::app::ConnectionState;
 
