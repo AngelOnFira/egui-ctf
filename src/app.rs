@@ -3,7 +3,9 @@ use common::{
     NetworkMessage,
 };
 use core::fmt::Display;
+use egui_notify::{Toast, Toasts};
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
+use std::time::Duration;
 
 use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel};
 
@@ -11,6 +13,7 @@ use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::Subm
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
+    // Panels
     login_panel: Option<LoginPanel>,
 
     #[serde(skip)]
@@ -19,6 +22,11 @@ pub struct TemplateApp {
     #[serde(skip)]
     submission_panel: SubmissionPanel,
 
+    // Other visuals
+    #[serde(skip)]
+    toasts: Toasts,
+
+    // Other state
     #[serde(skip)]
     connection_state: ConnectionState,
 
@@ -78,6 +86,8 @@ impl Default for TemplateApp {
             login_panel: None,
             hacker_list: HackerList::default(),
             submission_panel: SubmissionPanel::default(),
+            // Other visuals
+            toasts: Toasts::default(),
             // Other state
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
@@ -143,8 +153,17 @@ impl eframe::App for TemplateApp {
                                     // Events that the server sends and we
                                     // should display
                                     CTFMessage::ClientUpdate(event) => match event {
-                                        ClientUpdate::ScoredPoint(_string) => todo!(),
+                                        ClientUpdate::ScoredPoint(string) => {
+                                            self.toasts
+                                                .info(string)
+                                                .set_duration(Some(Duration::from_secs(5)));
+                                        }
                                         ClientUpdate::TeamScoredPoint => todo!(),
+                                        ClientUpdate::IncorrectFlag(string) => {
+                                            self.toasts
+                                                .error(string)
+                                                .set_duration(Some(Duration::from_secs(5)));
+                                        }
                                     },
                                 }
                             }
@@ -205,5 +224,8 @@ impl eframe::App for TemplateApp {
                 ui.label("You would normally choose either panels OR windows.");
             });
         }
+
+        // Toasts
+        self.toasts.show(ctx);
     }
 }

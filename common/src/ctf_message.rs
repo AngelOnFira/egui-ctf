@@ -104,4 +104,6 @@ pub enum ClientUpdate {
     ScoredPoint(String),
     /// This client's team scored a point
     TeamScoredPoint,
+    /// This client submitted an incorrect flag
+    IncorrectFlag(String),
 }

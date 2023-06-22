@@ -166,7 +166,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                     // Check the database to see if there are any challenges with
                     // this flag
                     let correct_flag_challenges: Vec<challenge::Model> = challenge::Entity::find()
-                        .filter(challenge::Column::Flag.contains(&flag))
+                        .filter(challenge::Column::Flag.eq(&flag))
                         .all(&db_clone)
                         .await
                         .expect("Failed to get challenges with flag");
