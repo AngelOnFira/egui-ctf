@@ -26,6 +26,7 @@ impl EventHandler for Handler {
                         &command.data.options,
                         self.db.clone(),
                         &command.member.as_ref().unwrap().user.id,
+                        &command.member.as_ref().unwrap().user.name,
                     )
                     .await
                 }

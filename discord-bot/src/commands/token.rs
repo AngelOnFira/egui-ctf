@@ -8,12 +8,13 @@ use serenity::model::prelude::UserId;
 pub async fn run(
     _options: &[CommandDataOption],
     db: DatabaseConnection,
-    discord_user: &UserId,
+    discord_user_id: &UserId,
+    discord_username: &String,
 ) -> String {
     // Get the hacker from the database, or create a hacker if they aren't in
     // already
     let hacker = hacker::Entity::find()
-        .filter(hacker::Column::DiscordId.eq(discord_user.0))
+        .filter(hacker::Column::DiscordId.eq(discord_user_id.0))
         .one(&db)
         .await
         .unwrap();
@@ -22,8 +23,8 @@ pub async fn run(
         Some(hacker) => hacker,
         None => {
             let hacker = hacker::ActiveModel {
-                discord_id: Set(discord_user.0.to_string()),
-                username: Set("123".to_string()),
+                discord_id: Set(discord_user_id.0.to_string()),
+                username: Set(discord_username.to_string()),
                 ..Default::default()
             };
             dbg!(hacker.clone());

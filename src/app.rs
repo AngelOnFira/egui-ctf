@@ -175,9 +175,9 @@ impl eframe::App for TemplateApp {
                                                 .error(string)
                                                 .set_duration(Some(Duration::from_secs(5)));
                                         }
-                                        ClientUpdate::Authenticated(discord_id) => {
+                                        ClientUpdate::Authenticated(discord_username) => {
                                             self.toasts
-                                                .info(format!("Logged in as {}", discord_id))
+                                                .info(format!("Logged in as {}", discord_username))
                                                 .set_duration(Some(Duration::from_secs(5)));
 
                                             // Set the authentication state

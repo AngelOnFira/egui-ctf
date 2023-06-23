@@ -174,7 +174,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         CTFServer::send_message_associated(
                                             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                                                 ClientUpdate::Authenticated(
-                                                    hacker.discord_id.clone(),
+                                                    hacker.username.clone(),
                                                 ),
                                             )),
                                             recipient_clone.clone(),
