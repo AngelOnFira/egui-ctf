@@ -120,59 +120,17 @@ impl Handler<Disconnect> for CTFServer {
 }
 
 impl Handler<Connect> for CTFServer {
-    type Result = ResponseActFuture<Self, DeferredWorkResult>;
+    type Result = ();
 
     fn handle(&mut self, msg: Connect, _ctx: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
         self.sessions
             .insert(msg.self_id, Session::new(msg.addr.clone()));
-
-        let db_clone = self.db.clone();
-        let fut = async move {
-            // Start username generation
-            let username_gen = Username();
-
-            // Add a new team to the database
-            let team = team::ActiveModel {
-                name: Set(username_gen.fake::<String>()),
-                ..Default::default()
-            };
-
-            let team: team::Model = team.insert(&db_clone).await.expect("Failed to insert team");
-
-            // Add a new hacker to the database
-            let hacker = hacker::ActiveModel {
-                username: Set(username_gen.fake::<String>()),
-                fk_team_id: Set(Some(team.id)),
-                ..Default::default()
-            };
-
-            let _hacker: hacker::Model = hacker
-                .insert(&db_clone)
-                .await
-                .expect("Failed to insert hacker");
-
-            // Get the updated state from the database
-            CTFState::rebuild_state(&db_clone).await
-        };
-
-        let fut = actix::fut::wrap_future::<_, Self>(fut);
-
-        let fut = fut.map(|result, actor, _ctx| {
-            // Actor's state updated here
-            actor.ctf_state = result;
-
-            // Broadcast the state change to all players
-            actor.broadcast_message(NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
-                actor.ctf_state.get_client_state(),
-            )));
-
-            Ok(())
-        });
-
-        // Return the future to be run
-        Box::pin(fut)
     }
+}
+
+enum CTFServerStateChange {
+    Authenticated(String),
 }
 
 impl Handler<IncomingCTFRequest> for CTFServer {
@@ -187,25 +145,81 @@ impl Handler<IncomingCTFRequest> for CTFServer {
             // Check if this client is authenticated
             match auth {
                 Auth::Unauthenticated => {
-                    if let CTFMessage::Login(token) = msg.ctf_message {
+                    if let CTFMessage::Login(token) = &msg.ctf_message {
                         // Find any tokens in the database that match this token
                         let token = token::Entity::find()
-                            .filter(token::Column::Token.eq(&token))
+                            .filter(token::Column::Token.eq(token))
+                            // Token is a primary key, so only getting one is fine
                             .one(&db_clone)
                             .await
                             .expect("Failed to get token");
-                        
-                        CTFServer::send_message_associated(
-                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                                ClientUpdate::ScoredPoint(format!(
-                                    "You solved {} for {} points!",
-                                    challenge.title, challenge.points
-                                )),
-                            )),
-                            recipient_clone,
-                        )
+
+                        // If we have that token, then we can authenticate this
+                        // websocket connection as the user they say they are
+                        match token {
+                            Some(token) => {
+                                // Get the hacker associated with this token
+                                let hacker =
+                                    hacker::Entity::find_by_id(token.fk_hacker_id.unwrap())
+                                        .one(&db_clone)
+                                        .await
+                                        .expect("Failed to get hacker");
+
+                                // If we have a hacker, then we can authenticate
+                                // this websocket connection as the user they say
+                                // they are
+                                match hacker {
+                                    Some(hacker) => {
+                                        // Tell the client they are authenticated
+                                        CTFServer::send_message_associated(
+                                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                                ClientUpdate::Authenticated(
+                                                    hacker.discord_id.clone(),
+                                                ),
+                                            )),
+                                            recipient_clone.clone(),
+                                        );
+
+                                        // Send the client the state
+                                        CTFServer::send_message_associated(
+                                            NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
+                                                CTFState::rebuild_state(&db_clone)
+                                                    .await
+                                                    .get_client_state(),
+                                            )),
+                                            recipient_clone.clone(),
+                                        );
+
+                                        
+                                        // Get the updated state from the database
+                                        CTFState::rebuild_state(&db_clone).await;
+                                        
+                                        // Update the session to be authenticated
+                                        return Some(CTFServerStateChange::Authenticated(
+                                            hacker.discord_id.clone(),
+                                        ));
+                                    }
+                                    // If this token doesn't have a hacker
+                                    // associated with it, something is wrong.
+                                    // This is unreachable.
+                                    None => {
+                                        panic!("Token has no hacker associated with it");
+                                    }
+                                }
+                            }
+                            None => {
+                                // If we don't have that token, then we can't
+                                // authenticate this websocket connection
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::IncorrectToken,
+                                    )),
+                                    recipient_clone,
+                                );
+                            }
+                        }
                     }
-                },
+                }
                 Auth::Hacker { discord_id } => {
                     match msg.ctf_message {
                         CTFMessage::CTFClientState(_) => todo!(),
@@ -252,11 +266,31 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                     }
                 }
             }
+
+            return None;
         };
 
         let fut = actix::fut::wrap_future::<_, Self>(fut);
 
-        let fut = fut.map(|_result, _actor, _ctx| Ok(()));
+        let fut = fut.map(move |result, actor, _ctx| {
+            // Run any updates of state change if needed
+            if let Some(state_change) = result {
+                match state_change {
+                    CTFServerStateChange::Authenticated(discord_id) => {
+                        // Update the session to be authenticated
+                        let session = actor.sessions.get_mut(&msg.id).unwrap();
+                        session.auth = Auth::Hacker { discord_id };
+
+                        // Broadcast this state update to all connected hackers
+                        actor.broadcast_message(NetworkMessage::CTFMessage(
+                            CTFMessage::CTFClientState(actor.ctf_state.get_client_state()),
+                        ));
+                    }
+                }
+            }
+
+            Ok(())
+        });
 
         // Return the future to be run
         Box::pin(fut)

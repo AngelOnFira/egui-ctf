@@ -48,7 +48,7 @@ impl SubmissionPanel {
             });
         });
 
-        // Login button
+        // Submit button
         if ui.button("Submit").clicked() {
             // Send the submission to the server if it's not empty
             if !self.flag.is_empty() {

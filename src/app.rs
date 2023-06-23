@@ -14,7 +14,7 @@ use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::Subm
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     // Panels
-    login_panel: Option<LoginPanel>,
+    login_panel: LoginPanel,
 
     #[serde(skip)]
     hacker_list: HackerList,
@@ -29,6 +29,9 @@ pub struct TemplateApp {
     // Other state
     #[serde(skip)]
     connection_state: ConnectionState,
+
+    #[serde(skip)]
+    authentication_state: AuthenticationState,
 
     // #[serde(skip)]
     // websocket_connection:
@@ -67,6 +70,11 @@ impl ConnectionState {
     }
 }
 
+pub enum AuthenticationState {
+    NotAuthenticated,
+    Authenticated,
+}
+
 pub enum ConnectionStateError {
     NotConnected,
 }
@@ -83,7 +91,7 @@ impl Default for TemplateApp {
     fn default() -> Self {
         Self {
             // Panels
-            login_panel: None,
+            login_panel: LoginPanel::default(),
             hacker_list: HackerList::default(),
             submission_panel: SubmissionPanel::default(),
             // Other visuals
@@ -91,6 +99,7 @@ impl Default for TemplateApp {
             // Other state
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
+            authentication_state: AuthenticationState::NotAuthenticated,
             client_state: ClientState { ctf_state: None },
         }
     }
@@ -166,6 +175,20 @@ impl eframe::App for TemplateApp {
                                                 .error(string)
                                                 .set_duration(Some(Duration::from_secs(5)));
                                         }
+                                        ClientUpdate::Authenticated(discord_id) => {
+                                            self.toasts
+                                                .info(format!("Logged in as {}", discord_id))
+                                                .set_duration(Some(Duration::from_secs(5)));
+
+                                            // Set the authentication state
+                                            self.authentication_state =
+                                                AuthenticationState::Authenticated;
+                                        }
+                                        ClientUpdate::IncorrectToken => {
+                                            self.toasts
+                                                .error("Incorrect token")
+                                                .set_duration(Some(Duration::from_secs(5)));
+                                        }
                                     },
                                 }
                             }
@@ -210,11 +233,20 @@ impl eframe::App for TemplateApp {
 
             // Check if we're connected to the server
             if let ConnectionState::Connected { .. } = &self.connection_state {
-                // Show the hacker list
-                self.hacker_list.show(ctx, &self.client_state);
+                // Check if we're authenticated
+                match &self.authentication_state {
+                    AuthenticationState::NotAuthenticated => {
+                        // Show the login panel
+                        self.login_panel.show(ctx, &mut self.connection_state);
+                    }
+                    AuthenticationState::Authenticated => {
+                        // Show the hacker list
+                        self.hacker_list.show(ctx, &self.client_state);
 
-                // Show the submission panel
-                self.submission_panel.show(ctx, &mut self.connection_state);
+                        // Show the submission panel
+                        self.submission_panel.show(ctx, &mut self.connection_state);
+                    }
+                }
             }
         });
 

@@ -102,6 +102,10 @@ pub struct CTFChallenge {}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientUpdate {
+    /// This client correctly authenticated with a token
+    Authenticated(String), // <-- TODO: Send them their discord info
+    /// This client entered an incorrect token
+    IncorrectToken,
     /// This client scored a point
     ScoredPoint(String),
     /// This client's team scored a point

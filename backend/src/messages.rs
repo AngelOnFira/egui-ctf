@@ -11,7 +11,7 @@ pub type MessageError = ();
 pub type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
 
 #[derive(Message)]
-#[rtype(result = "Result<(), MessageError>")]
+#[rtype(result = "()")]
 pub struct Connect {
     pub addr: Recipient<WsActorMessage>,
     pub self_id: ClientId,
