@@ -7,7 +7,7 @@ use egui_notify::Toasts;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 use std::time::Duration;
 
-use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel};
+use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel, team::TeamPanel};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -21,6 +21,9 @@ pub struct TemplateApp {
 
     #[serde(skip)]
     submission_panel: SubmissionPanel,
+
+    #[serde(skip)]
+    team_panel: TeamPanel,
 
     // Other visuals
     #[serde(skip)]
@@ -94,6 +97,7 @@ impl Default for TemplateApp {
             login_panel: LoginPanel::default(),
             hacker_list: HackerList::default(),
             submission_panel: SubmissionPanel::default(),
+            team_panel: TeamPanel::default(),
             // Other visuals
             toasts: Toasts::default(),
             // Other state
@@ -245,6 +249,9 @@ impl eframe::App for TemplateApp {
 
                         // Show the submission panel
                         self.submission_panel.show(ctx, &mut self.connection_state);
+
+                        // Show the team panel
+                        self.team_panel.show(ctx, &self.client_state);
                     }
                 }
             }
