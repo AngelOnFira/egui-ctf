@@ -173,9 +173,10 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         // Tell the client they are authenticated
                                         CTFServer::send_message_associated(
                                             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                                                ClientUpdate::Authenticated(
-                                                    hacker.username.clone(),
-                                                ),
+                                                ClientUpdate::Authenticated {
+                                                    discord_username: hacker.username.clone(),
+                                                    valid_token: token.token.clone(),
+                                                },
                                             )),
                                             recipient_clone.clone(),
                                         );
@@ -190,10 +191,9 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                             recipient_clone.clone(),
                                         );
 
-                                        
                                         // Get the updated state from the database
                                         CTFState::rebuild_state(&db_clone).await;
-                                        
+
                                         // Update the session to be authenticated
                                         return Some(CTFServerStateChange::Authenticated(
                                             hacker.discord_id.clone(),

@@ -25,7 +25,12 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Token::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Token::Token).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Token::Token)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(Token::Expiry).date_time().not_null())
                     .col(ColumnDef::new(Token::FkHackerId).string().null())
                     .foreign_key(

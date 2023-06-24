@@ -27,7 +27,7 @@ egui = "0.22.0"
 serde = { version = "1.0.164", features = ["derive"] }
 serde_json = "1.0.97"
 ewebsock = { git = "https://github.com/rerun-io/ewebsock" }
-eframe = "0.22.0"
+eframe = { version = "0.22.0", features = ["persistence", "wgpu", "default_fonts"] }
 egui-notify = "0.7.0"
 
 # Common

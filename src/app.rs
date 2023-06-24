@@ -5,14 +5,17 @@ use common::{
 use core::fmt::Display;
 use egui_notify::Toasts;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::panels::{hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel, team::TeamPanel};
+use crate::panels::{
+    hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel, team::TeamPanel,
+};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {
+pub struct CTFApp {
     // Panels
     login_panel: LoginPanel,
 
@@ -33,7 +36,6 @@ pub struct TemplateApp {
     #[serde(skip)]
     connection_state: ConnectionState,
 
-    #[serde(skip)]
     authentication_state: AuthenticationState,
 
     // #[serde(skip)]
@@ -44,7 +46,7 @@ pub struct TemplateApp {
     client_state: ClientState,
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ClientState {
     // pub credentials: Option<Credentials>,
     pub ctf_state: Option<CTFClientState>,
@@ -73,9 +75,10 @@ impl ConnectionState {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug)]
 pub enum AuthenticationState {
     NotAuthenticated,
-    Authenticated,
+    Authenticated { valid_token: String },
 }
 
 pub enum ConnectionStateError {
@@ -90,7 +93,7 @@ impl Display for ConnectionStateError {
     }
 }
 
-impl Default for TemplateApp {
+impl Default for CTFApp {
     fn default() -> Self {
         Self {
             // Panels
@@ -109,8 +112,14 @@ impl Default for TemplateApp {
     }
 }
 
-impl TemplateApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+impl CTFApp {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // Load previous app state (if any).
+        // Note that you must enable the `persistence` feature for this to work.
+        if let Some(storage) = cc.storage {
+            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        }
+
         Self {
             websocket_thread_handle: None,
             ..Default::default()
@@ -122,12 +131,27 @@ impl TemplateApp {
         let wakeup = move || ctx.request_repaint(); // wake up UI thread on new message
         match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
-                // self.frontend = Some(FrontEnd::new(ws_sender, ws_receiver));
                 self.connection_state = ConnectionState::Connected {
                     ws_sender,
                     ws_receiver,
                 };
-                // self.error.clear();
+
+                println!("{:?}", &self.authentication_state);
+
+                // If we already have a valid login token, send it to the
+                // backend to auth this connection
+                if let AuthenticationState::Authenticated { valid_token } =
+                    &self.authentication_state
+                {
+                    if let Err(e) = self
+                        .connection_state
+                        .send_message(NetworkMessage::CTFMessage(CTFMessage::Login(
+                            valid_token.to_owned(),
+                        )))
+                    {
+                        eprintln!("Failed to send login token: {}", e);
+                    }
+                }
             }
             Err(error) => {
                 panic!("Failed to connect {}", error);
@@ -136,10 +160,12 @@ impl TemplateApp {
     }
 }
 
-impl eframe::App for TemplateApp {
+impl eframe::App for CTFApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let mut save_flag = false;
+
         match &self.connection_state {
             ConnectionState::Disconnected => {
                 self.connect(ctx.clone());
@@ -179,14 +205,20 @@ impl eframe::App for TemplateApp {
                                                 .error(string)
                                                 .set_duration(Some(Duration::from_secs(5)));
                                         }
-                                        ClientUpdate::Authenticated(discord_username) => {
+                                        ClientUpdate::Authenticated {
+                                            discord_username,
+                                            valid_token,
+                                        } => {
                                             self.toasts
                                                 .info(format!("Logged in as {}", discord_username))
                                                 .set_duration(Some(Duration::from_secs(5)));
 
                                             // Set the authentication state
                                             self.authentication_state =
-                                                AuthenticationState::Authenticated;
+                                                AuthenticationState::Authenticated { valid_token };
+
+                                            // Flag to save the app state
+                                            save_flag = true;
                                         }
                                         ClientUpdate::IncorrectToken => {
                                             self.toasts
@@ -203,6 +235,16 @@ impl eframe::App for TemplateApp {
             }
             _ => {}
         };
+
+        // I'm doing a save flag since I can't figure out how to get mutable
+        // access to self in the match statement above.
+        if save_flag {
+            // Manually call save to persist the app
+            // state
+            if let Some(storage) = frame.storage_mut() {
+                self.save(storage);
+            }
+        }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
@@ -243,7 +285,7 @@ impl eframe::App for TemplateApp {
                         // Show the login panel
                         self.login_panel.show(ctx, &mut self.connection_state);
                     }
-                    AuthenticationState::Authenticated => {
+                    AuthenticationState::Authenticated { valid_token } => {
                         // Show the hacker list
                         self.hacker_list.show(ctx, &self.client_state);
 
@@ -268,5 +310,10 @@ impl eframe::App for TemplateApp {
 
         // Toasts
         self.toasts.show(ctx);
+    }
+
+    /// Called by the frame work to save state before shutdown.
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
     }
 }

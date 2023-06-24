@@ -52,15 +52,10 @@ impl LoginPanel {
         if ui.button("Login").clicked() {
             // Send the submission to the server if it's not empty
             if !self.token.is_empty() {
-                match connection_state.send_message(NetworkMessage::CTFMessage(CTFMessage::Login(
-                    self.token.clone(),
-                ))) {
-                    Ok(_) => {
-                        self.token.clear();
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to send flag: {}", e);
-                    }
+                if let Err(e) = connection_state.send_message(NetworkMessage::CTFMessage(
+                    CTFMessage::Login(self.token.clone()),
+                )) {
+                    eprintln!("Failed to send login token: {}", e);
                 }
             }
         }
