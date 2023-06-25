@@ -1,4 +1,5 @@
 use common::{ctf_message::CTFMessage, NetworkMessage};
+use log::error;
 
 use crate::app::ConnectionState;
 
@@ -59,7 +60,7 @@ impl SubmissionPanel {
                         self.flag.clear();
                     }
                     Err(e) => {
-                        eprintln!("Failed to send flag: {}", e);
+                        error!("Failed to send flag: {}", e);
                     }
                 }
             }

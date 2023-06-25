@@ -18,23 +18,18 @@ fn main() -> eframe::Result<()> {
 // when compiling to web using trunk.
 #[cfg(target_arch = "wasm32")]
 fn main() {
+    use log::{error, info, warn};
+    use wasm_bindgen::prelude::*;
+    use wasm_bindgen_console_logger::DEFAULT_LOGGER;
+
+    log::set_logger(&DEFAULT_LOGGER).unwrap();
+    log::set_max_level(log::LevelFilter::Info);
+
     // Make sure panics are logged using `console.error`.
     console_error_panic_hook::set_once();
 
     // Redirect tracing to console.log and friends:
     tracing_wasm::set_as_global_default();
-
-    // let web_options = eframe::WebOptions::default();
-
-    // wasm_bindgen_futures::spawn_local(async {
-    //     eframe::start_web(
-    //         "the_canvas_id", // hardcode it
-    //         web_options,
-    //         Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
-    //     )
-    //     .await
-    //     .expect("failed to start eframe");
-    // });
 
     wasm_bindgen_futures::spawn_local(async {
         eframe::WebRunner::new()

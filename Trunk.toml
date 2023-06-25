@@ -2,6 +2,10 @@
 filehash = false
 
 [watch]
-ignore = [
-    "file.db"    
+watch = [
+    # Only watch source directory for file changes
+    "src/",
+    # Watch common too
+    "common/"
 ]
+

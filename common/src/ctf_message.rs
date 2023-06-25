@@ -54,7 +54,7 @@ impl CTFState {
     //     }
     // }
 
-    /// Build a client's team data
+    /// Build a hackers's team data
     pub async fn get_hacker_team_data(client_id: &String, db: &DatabaseConnection) -> TeamData {
         // Get the hacker
         let hacker = hacker::Entity::find()
@@ -93,6 +93,21 @@ impl CTFState {
                 })
                 .collect(),
         })
+    }
+
+    // Build a hacker's client data
+    pub async fn get_hacker_client_data(client_id: &String, db: &DatabaseConnection) -> ClientData {
+        // Get the hacker
+        let hacker = hacker::Entity::find()
+            .filter(hacker::Column::DiscordId.eq(client_id))
+            .one(db)
+            .await
+            .expect("Failed to get hacker")
+            .unwrap();
+
+        ClientData::LoggedIn {
+            username: hacker.username,
+        }
     }
 
     /// Rebuild the state from the database. It might be better to just update
@@ -146,21 +161,21 @@ pub struct CTFClientState {
     // Any data that anyone can see about the CTF
     pub global_data: Option<GlobalData>,
     // Any data that only logged in players can see about the CTF.
-    pub game_data: Option<GameData>,
+    pub game_data: GameData,
     // Any data that only this client's team can see.
-    pub team_data: Option<TeamData>,
+    pub team_data: TeamData,
     // Any data that only this client can see about the CTF, such as their
     // settings.
-    pub client_data: Option<ClientData>,
+    pub client_data: ClientData,
 }
 
 impl Default for CTFClientState {
     fn default() -> Self {
         Self {
             global_data: None,
-            game_data: None,
-            team_data: None,
-            client_data: None,
+            game_data: GameData::LoggedOut,
+            team_data: TeamData::NoTeam,
+            client_data: ClientData::LoggedOut,
         }
     }
 }

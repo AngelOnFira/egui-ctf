@@ -78,12 +78,12 @@ impl WsConn {
             );
         });
 
-        // Once a second, send the elapsed time that this client has been
-        // connected
-        ctx.run_interval(Duration::from_secs(1), |act, ctx| {
-            let msg = NetworkMessage::Time(act.hb.elapsed().as_secs());
-            ctx.text(serde_json::to_string(&msg).unwrap());
-        });
+        // // Once a second, send the elapsed time that this client has been
+        // // connected
+        // ctx.run_interval(Duration::from_secs(1), |act, ctx| {
+        //     let msg = NetworkMessage::Time(act.hb.elapsed().as_secs());
+        //     ctx.text(serde_json::to_string(&msg).unwrap());
+        // });
     }
 }
 

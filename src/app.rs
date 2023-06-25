@@ -5,6 +5,7 @@ use common::{
 use core::fmt::Display;
 use egui_notify::Toasts;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -138,7 +139,7 @@ impl CTFApp {
                     ws_receiver,
                 };
 
-                println!("{:?}", &self.authentication_state);
+                info!("Auth status: {:?}", &self.authentication_state);
 
                 // If we already have a valid login token, send it to the
                 // backend to auth this connection
@@ -151,7 +152,7 @@ impl CTFApp {
                             valid_token.to_owned(),
                         )))
                     {
-                        eprintln!("Failed to send login token: {}", e);
+                        info!("Failed to send login token: {}", e);
                     }
                 }
             }
@@ -194,20 +195,22 @@ impl eframe::App for CTFApp {
                                                 Some(global_data);
                                         }
                                         CTFClientStateComponent::GameData(game_data) => {
-                                            self.client_state.ctf_state.game_data = Some(game_data);
+                                            self.client_state.ctf_state.game_data = game_data;
                                         }
                                         CTFClientStateComponent::TeamData(team_data) => {
-                                            self.client_state.ctf_state.team_data = Some(team_data);
+                                            self.client_state.ctf_state.team_data = team_data;
                                         }
                                         CTFClientStateComponent::ClientData(client_data) => {
-                                            self.client_state.ctf_state.client_data =
-                                                Some(client_data);
+                                            self.client_state.ctf_state.client_data = client_data;
                                         }
                                     },
+
                                     // The client can't receive submissions
                                     CTFMessage::SubmitFlag(_) => unreachable!(),
+
                                     // The client can't receive login requests
                                     CTFMessage::Login(_) => unreachable!(),
+
                                     // Events that the server sends and we
                                     // should display
                                     CTFMessage::ClientUpdate(event) => match event {

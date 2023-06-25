@@ -1,4 +1,5 @@
 use common::{ctf_message::CTFMessage, NetworkMessage};
+use log::error;
 
 use crate::app::ConnectionState;
 
@@ -55,7 +56,7 @@ impl LoginPanel {
                 if let Err(e) = connection_state.send_message(NetworkMessage::CTFMessage(
                     CTFMessage::Login(self.token.clone()),
                 )) {
-                    eprintln!("Failed to send login token: {}", e);
+                    error!("Failed to send login token: {}", e);
                 }
             }
         }
