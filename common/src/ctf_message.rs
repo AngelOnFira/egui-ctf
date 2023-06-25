@@ -1,13 +1,13 @@
 use entity::entities::{hacker, team};
 use iter_tools::Itertools;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CTFMessage {
     /// A subset of the information stored in the CTF state, to be passed to the client
-    CTFClientState(CTFClientStateComponent),
+    CTFClientStateComponent(CTFClientStateComponent),
     SubmitFlag(String),
     /// Tell a specific client that something that matters to them has happened
     /// (They submitted a flag correctly a team member went offline, etc.)
@@ -30,25 +30,69 @@ impl Default for CTFState {
 }
 
 impl CTFState {
-    /// Build a state for the client to see
-    pub fn get_client_state(&self, client_id: Uuid, db: &DatabaseConnection) -> CTFClientState {
-        // Build the team and client data. First, see if the client is logged
-        // in, then see if they're on a team.
-        // let logged_in
-        // let client_data, team_data = match 
+    // /// Build a state for the client to see
+    // pub fn get_client_state(&self, client_id: Uuid, db: &DatabaseConnection) -> CTFClientState {
+    //     // Build the team and client data. First, see if the client is logged
+    //     // in, then see if they're on a team.
+    //     // let logged_in
+    //     // let client_data, team_data = match
 
+    //     CTFClientState {
+    //         global_data: GlobalData {
+    //             hacker_teams: self.hacker_teams.clone(),
+    //         },
+    //         game_data: GameData {
+    //             challenges: Vec::new(),
+    //         },
+    //         team_data: TeamData {
+    //             team: HackerTeam {
+    //                 name: (),
+    //                 hackers: (),
+    //             },
+    //         },
+    //         client_data: ClientData {},
+    //     }
+    // }
 
-        CTFClientState {
-            global_data: GlobalData {
-                hacker_teams: self.hacker_teams.clone()
-            },
-            game_data: GameData { challenges: Vec::new() },
-            team_data: TeamData {
-                team: HackerTeam { name: (), hackers: () },
-            },
-            client_data: ClientData {
-            },
+    /// Build a client's team data
+    pub async fn get_hacker_team_data(client_id: &String, db: &DatabaseConnection) -> TeamData {
+        // Get the hacker
+        let hacker = hacker::Entity::find()
+            .filter(hacker::Column::DiscordId.eq(client_id))
+            .one(db)
+            .await
+            .expect("Failed to get hacker")
+            .unwrap();
+
+        // If the hacker isn't on a team, return that
+        if hacker.fk_team_id.is_none() {
+            return TeamData::NoTeam;
         }
+
+        // Get the team from the hacker
+        let team = team::Entity::find()
+            .filter(team::Column::Id.eq(hacker.fk_team_id.unwrap()))
+            .one(db)
+            .await
+            .expect("Failed to get team")
+            .unwrap();
+
+        // Find all the hackers that are on this team
+        let hackers = hacker::Entity::find()
+            .filter(hacker::Column::FkTeamId.eq(team.id))
+            .all(db)
+            .await
+            .expect("Failed to get hackers");
+
+        TeamData::OnTeam(HackerTeam {
+            name: team.name,
+            hackers: hackers
+                .iter()
+                .map(|h| Hacker {
+                    name: h.username.clone(),
+                })
+                .collect(),
+        })
     }
 
     /// Rebuild the state from the database. It might be better to just update
@@ -100,16 +144,25 @@ impl CTFState {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CTFClientState {
     // Any data that anyone can see about the CTF
-    pub global_data: GlobalData,
-    // Any data that only logged in players can see about the CTF. This will be
-    // none if the client is not logged in.
-    pub game_data: GameData,
-    // Any data that only this client's team can see. This will be none if the
-    // client is not logged in, or not on a team.
+    pub global_data: Option<GlobalData>,
+    // Any data that only logged in players can see about the CTF.
+    pub game_data: Option<GameData>,
+    // Any data that only this client's team can see.
     pub team_data: Option<TeamData>,
     // Any data that only this client can see about the CTF, such as their
-    // settings. This will be none if the client is not logged in.
+    // settings.
     pub client_data: Option<ClientData>,
+}
+
+impl Default for CTFClientState {
+    fn default() -> Self {
+        Self {
+            global_data: None,
+            game_data: None,
+            team_data: None,
+            client_data: None,
+        }
+    }
 }
 
 // This is the counterpart to the CTFClientState above. It's used to send
@@ -129,17 +182,22 @@ pub struct GlobalData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GameData {
-    pub challenges: Vec<CTFChallenge>,
+pub enum GameData {
+    LoggedOut,
+    LoggedIn { challenges: Vec<CTFChallenge> },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TeamData {
-    team: HackerTeam,
+pub enum TeamData {
+    NoTeam,
+    OnTeam(HackerTeam),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ClientData {}
+pub enum ClientData {
+    LoggedOut,
+    LoggedIn { username: String },
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HackerTeam {

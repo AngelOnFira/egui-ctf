@@ -6,7 +6,10 @@ use actix::{
     ActorFutureExt, AsyncContext, ResponseActFuture,
 };
 use common::{
-    ctf_message::{CTFClientState, CTFMessage, CTFState, ClientUpdate},
+    ctf_message::{
+        CTFClientState, CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate, GameData,
+        TeamData,
+    },
     ClientId, NetworkMessage,
 };
 use entity::entities::{challenge, hacker, team, token};
@@ -131,8 +134,13 @@ impl Handler<Connect> for CTFServer {
 
 enum CTFServerStateChange {
     Authenticated {
+        // The client id of the user that was just authenticated
         discord_id: String,
-        ctf_client_state: CTFClientState,
+        // The updated game state to broadcast to all players
+        game_data_update: GameData,
+        // The hacker's team data to send to the client that was just authenticated
+        hacker_team_data: TeamData,
+        // The hacker's client
     },
 }
 
@@ -192,9 +200,17 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         CTFState::rebuild_state(&db_clone).await;
 
                                         // Update the session to be authenticated
-                                        return Some(CTFServerStateChange::Authenticated(
-                                            hacker.discord_id.clone(),
-                                        ));
+                                        return Some(CTFServerStateChange::Authenticated {
+                                            discord_id: hacker.discord_id.clone(),
+                                            game_data_update: GameData::LoggedOut,
+                                            hacker_team_data: {
+                                                CTFState::get_hacker_team_data(
+                                                    &hacker.discord_id,
+                                                    &db_clone,
+                                                )
+                                                .await
+                                            },
+                                        });
                                     }
                                     // If this token doesn't have a hacker
                                     // associated with it, something is wrong.
@@ -219,7 +235,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 }
                 Auth::Hacker { discord_id } => {
                     match msg.ctf_message {
-                        CTFMessage::CTFClientState(_) => todo!(),
+                        CTFMessage::CTFClientStateComponent(_) => todo!(),
                         CTFMessage::SubmitFlag(flag) => {
                             // Check the database to see if there are any challenges with
                             // this flag
@@ -275,17 +291,20 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 match state_change {
                     CTFServerStateChange::Authenticated {
                         discord_id,
-                        ctf_client_state,
+                        game_data_update,
+                        hacker_team_data,
                     } => {
                         // Update the session to be authenticated
                         let session = actor.sessions.get_mut(&msg.id).unwrap();
                         session.auth = Auth::Hacker { discord_id };
 
-                        // Broadcast this state update to all connected hackers.
+                        // Broadcast this GameData update to all connected hackers.
                         // This needs to be done here, since we don't have
                         // access to the actor in the `fut` block above.
                         actor.broadcast_message(NetworkMessage::CTFMessage(
-                            CTFMessage::CTFClientState(actor.ctf_state.get_client_state()),
+                            CTFMessage::CTFClientStateComponent(CTFClientStateComponent::GameData(
+                                game_data_update,
+                            )),
                         ));
                     }
                 }

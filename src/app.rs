@@ -1,5 +1,5 @@
 use common::{
-    ctf_message::{CTFClientState, CTFMessage, ClientUpdate},
+    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
     NetworkMessage,
 };
 use core::fmt::Display;
@@ -49,7 +49,7 @@ pub struct CTFApp {
 #[derive(Deserialize, Serialize)]
 pub struct ClientState {
     // pub credentials: Option<Credentials>,
-    pub ctf_state: Option<CTFClientState>,
+    pub ctf_state: CTFClientState,
 }
 
 pub enum ConnectionState {
@@ -107,7 +107,9 @@ impl Default for CTFApp {
             websocket_thread_handle: None,
             connection_state: ConnectionState::Disconnected,
             authentication_state: AuthenticationState::NotAuthenticated,
-            client_state: ClientState { ctf_state: None },
+            client_state: ClientState {
+                ctf_state: CTFClientState::default(),
+            },
         }
     }
 }
@@ -184,9 +186,24 @@ impl eframe::App for CTFApp {
                             NetworkMessage::CTFMessage(ctf_message) => {
                                 match ctf_message {
                                     // If we get a state update from the server
-                                    CTFMessage::CTFClientState(ctf_client_state) => {
-                                        self.client_state.ctf_state = Some(ctf_client_state);
-                                    }
+                                    CTFMessage::CTFClientStateComponent(
+                                        ctf_client_state_component,
+                                    ) => match ctf_client_state_component {
+                                        CTFClientStateComponent::GlobalData(global_data) => {
+                                            self.client_state.ctf_state.global_data =
+                                                Some(global_data);
+                                        }
+                                        CTFClientStateComponent::GameData(game_data) => {
+                                            self.client_state.ctf_state.game_data = Some(game_data);
+                                        }
+                                        CTFClientStateComponent::TeamData(team_data) => {
+                                            self.client_state.ctf_state.team_data = Some(team_data);
+                                        }
+                                        CTFClientStateComponent::ClientData(client_data) => {
+                                            self.client_state.ctf_state.client_data =
+                                                Some(client_data);
+                                        }
+                                    },
                                     // The client can't receive submissions
                                     CTFMessage::SubmitFlag(_) => unreachable!(),
                                     // The client can't receive login requests

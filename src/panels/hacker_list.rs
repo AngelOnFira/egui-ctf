@@ -46,15 +46,10 @@ impl HackerList {
                 .column(Column::remainder())
                 .min_scrolled_height(0.0);
 
-            // if let Some(row_nr) = self.scroll_to_row.take() {
-            //     table = table.scroll_to_row(row_nr, None);
-            // }
-
-            // Login form
             // Make sure we have a ctf state. If we don't, set visible to
             // false.
-            match &ctf_state.ctf_state {
-                Some(client_state) => {
+            match &ctf_state.ctf_state.global_data {
+                Some(global_data) => {
                     // self.enabled = true;
                     table
                         .header(20.0, |mut header| {
@@ -66,7 +61,7 @@ impl HackerList {
                             });
                         })
                         .body(|mut body| {
-                            for hacker_team in &client_state.hacker_teams {
+                            for hacker_team in &global_data.hacker_teams {
                                 for hacker in &hacker_team.hackers {
                                     body.row(20.0, |mut row| {
                                         row.col(|ui| {
