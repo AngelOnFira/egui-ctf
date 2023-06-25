@@ -6,7 +6,7 @@ use actix::{
     ActorFutureExt, AsyncContext, ResponseActFuture,
 };
 use common::{
-    ctf_message::{CTFMessage, CTFState, ClientUpdate},
+    ctf_message::{CTFClientState, CTFMessage, CTFState, ClientUpdate},
     ClientId, NetworkMessage,
 };
 use entity::entities::{challenge, hacker, team, token};
@@ -130,7 +130,10 @@ impl Handler<Connect> for CTFServer {
 }
 
 enum CTFServerStateChange {
-    Authenticated(String),
+    Authenticated {
+        discord_id: String,
+        ctf_client_state: CTFClientState,
+    },
 }
 
 impl Handler<IncomingCTFRequest> for CTFServer {
@@ -144,6 +147,9 @@ impl Handler<IncomingCTFRequest> for CTFServer {
         let fut = async move {
             // Check if this client is authenticated
             match auth {
+                // If they are unauthenticated, the only message we'll take from
+                // them is a login message.
+                // TODO: Should this also allow public data to be seen?
                 Auth::Unauthenticated => {
                     if let CTFMessage::Login(token) = &msg.ctf_message {
                         // Find any tokens in the database that match this token
@@ -181,17 +187,8 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                             recipient_clone.clone(),
                                         );
 
-                                        // Send the client the state
-                                        CTFServer::send_message_associated(
-                                            NetworkMessage::CTFMessage(CTFMessage::CTFClientState(
-                                                CTFState::rebuild_state(&db_clone)
-                                                    .await
-                                                    .get_client_state(),
-                                            )),
-                                            recipient_clone.clone(),
-                                        );
-
-                                        // Get the updated state from the database
+                                        // Get the updated state from the
+                                        // database.
                                         CTFState::rebuild_state(&db_clone).await;
 
                                         // Update the session to be authenticated
@@ -276,12 +273,17 @@ impl Handler<IncomingCTFRequest> for CTFServer {
             // Run any updates of state change if needed
             if let Some(state_change) = result {
                 match state_change {
-                    CTFServerStateChange::Authenticated(discord_id) => {
+                    CTFServerStateChange::Authenticated {
+                        discord_id,
+                        ctf_client_state,
+                    } => {
                         // Update the session to be authenticated
                         let session = actor.sessions.get_mut(&msg.id).unwrap();
                         session.auth = Auth::Hacker { discord_id };
 
-                        // Broadcast this state update to all connected hackers
+                        // Broadcast this state update to all connected hackers.
+                        // This needs to be done here, since we don't have
+                        // access to the actor in the `fut` block above.
                         actor.broadcast_message(NetworkMessage::CTFMessage(
                             CTFMessage::CTFClientState(actor.ctf_state.get_client_state()),
                         ));
