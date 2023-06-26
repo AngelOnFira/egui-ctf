@@ -70,6 +70,8 @@ impl Default for ConnectionState {
             inner: Arc::new(Mutex::new(ConnectionStateInner {
                 connection_state: ConnectionStateEnum::Disconnected,
                 message_queue: Vec::new(),
+                ws_sender: None,
+                ws_receiver: None,
             })),
         }
     }
@@ -83,7 +85,7 @@ pub struct ConnectionStateInner {
 }
 
 impl ConnectionState {
-    fn send_message(&mut self, message: NetworkMessage) {
+    pub fn send_message(&mut self, message: NetworkMessage) {
         // If we're connected to the backend, send the message right away. If
         // we're connecting or disconnected, queue the message to be sent when
         // we connect.
@@ -92,10 +94,12 @@ impl ConnectionState {
         let mut inner = self.inner.lock().unwrap();
 
         match inner.connection_state {
-            ConnectionStateEnum::Connected {
-                ref mut ws_sender, ..
-            } => {
-                ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
+            ConnectionStateEnum::Connected => {
+                inner
+                    .ws_sender
+                    .as_mut()
+                    .unwrap()
+                    .send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
             }
             _ => {
                 inner.message_queue.push(message);
@@ -105,7 +109,7 @@ impl ConnectionState {
 
     // Try to empty the queue of messages to send to the backend. This may or
     // may not send messages.
-    fn empty_queue(&mut self) {
+    fn empty_queue(&mut self, event: WsEvent) {
         // Get access to the inner
         let mut inner = self.inner.lock().unwrap();
 
@@ -113,11 +117,15 @@ impl ConnectionState {
         // we're connecting or disconnected, queue the message to be sent when
         // we connect.
         match inner.connection_state {
-            ConnectionStateEnum::Connected {
-                ref mut ws_sender, ..
-            } => {
+            ConnectionStateEnum::Connected => {
                 for message in inner.message_queue.drain(..) {
-                    ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
+                    self.inner
+                        .lock()
+                        .unwrap()
+                        .ws_sender
+                        .as_mut()
+                        .unwrap()
+                        .send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
                 }
             }
             _ => {}
@@ -142,6 +150,7 @@ impl ConnectionState {
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum ConnectionStateEnum {
     Disconnected,
     Connecting,
@@ -223,7 +232,8 @@ impl CTFApp {
         let connection_state_clone = self.connection_state.clone();
 
         let wakeup = move |event: WsEvent| {
-            connection_state_clone.empty_queue();
+            let mut connection_state_clone = connection_state_clone.clone();
+            connection_state_clone.empty_queue(event);
             ctx.request_repaint(); // wake up UI thread on new message}
         };
         match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
@@ -257,15 +267,21 @@ impl eframe::App for CTFApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let mut save_flag = false;
 
-        match &self.connection_state {
-            ConnectionState::Disconnected => {
+        match &self.connection_state.get_state() {
+            ConnectionStateEnum::Disconnected => {
                 self.connect(ctx.clone());
             }
-            ConnectionState::Connected {
-                ws_sender: _,
-                ws_receiver,
-            } => {
-                while let Some(event) = ws_receiver.try_recv() {
+            ConnectionStateEnum::Connected => {
+                while let Some(event) = self
+                    .connection_state
+                    .inner
+                    .lock()
+                    .unwrap()
+                    .ws_receiver
+                    .as_ref()
+                    .unwrap()
+                    .try_recv()
+                {
                     if let WsEvent::Message(WsMessage::Text(ws_text)) = event {
                         // Deserialize the message
                         let message: NetworkMessage = serde_json::from_str(&ws_text).unwrap();
@@ -386,7 +402,7 @@ impl eframe::App for CTFApp {
             egui::warn_if_debug_build(ui);
 
             // Check if we're connected to the server
-            if let ConnectionState::Connected { .. } = &self.connection_state {
+            if let ConnectionStateEnum::Connected = &self.connection_state.get_state() {
                 // Check if we're authenticated
                 match &self.authentication_state {
                     AuthenticationState::NotAuthenticated => {

@@ -53,16 +53,9 @@ impl SubmissionPanel {
         if ui.button("Submit").clicked() {
             // Send the submission to the server if it's not empty
             if !self.flag.is_empty() {
-                match connection_state.send_message(NetworkMessage::CTFMessage(
-                    CTFMessage::SubmitFlag(self.flag.clone()),
-                )) {
-                    Ok(_) => {
-                        self.flag.clear();
-                    }
-                    Err(e) => {
-                        error!("Failed to send flag: {}", e);
-                    }
-                }
+                connection_state.send_message(NetworkMessage::CTFMessage(CTFMessage::SubmitFlag(
+                    self.flag.clone(),
+                )));
             }
         }
     }
