@@ -2,7 +2,6 @@ use entity::entities::{hacker, team};
 use iter_tools::Itertools;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CTFMessage {

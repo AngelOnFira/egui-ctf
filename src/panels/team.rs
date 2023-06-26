@@ -33,7 +33,7 @@ impl TeamPanel {
             });
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctf_state: &ClientState) {
         // Join a team
         ui.heading("Join Team");
 

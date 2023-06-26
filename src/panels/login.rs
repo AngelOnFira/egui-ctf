@@ -1,5 +1,4 @@
 use common::{ctf_message::CTFMessage, NetworkMessage};
-use log::error;
 
 use crate::app::ConnectionState;
 

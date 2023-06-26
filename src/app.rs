@@ -1,5 +1,5 @@
 use common::{
-    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
+    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate},
     NetworkMessage,
 };
 use core::fmt::Display;
@@ -426,7 +426,7 @@ impl eframe::App for CTFApp {
                         // Show the login panel
                         self.login_panel.show(ctx, &mut self.connection_state);
                     }
-                    AuthenticationState::Authenticated { valid_token } => {
+                    AuthenticationState::Authenticated { valid_token: _ } => {
                         // Show the hacker list
                         self.hacker_list.show(ctx, &self.client_state);
 

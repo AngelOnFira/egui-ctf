@@ -7,16 +7,14 @@ use actix::{
 };
 use common::{
     ctf_message::{
-        CTFClientState, CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate,
-        GameData, TeamData,
+        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, GameData, TeamData,
     },
     ClientId, NetworkMessage,
 };
-use entity::entities::{challenge, hacker, team, token};
-use fake::{faker::internet::en::Username, Fake};
+use entity::entities::{challenge, hacker, token};
 
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter,
 };
 use std::{collections::HashMap, time::Duration};
 
@@ -242,7 +240,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                     }
                 }
-                Auth::Hacker { discord_id } => {
+                Auth::Hacker { discord_id: _ } => {
                     match msg.ctf_message {
                         CTFMessage::CTFClientStateComponent(_) => todo!(),
                         CTFMessage::SubmitFlag(flag) => {
