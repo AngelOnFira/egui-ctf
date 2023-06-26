@@ -1,0 +1,9 @@
+[build]
+filehash = false
+
+[watch]
+watch = [
+    # Watch common
+    "../common/"
+]
+
