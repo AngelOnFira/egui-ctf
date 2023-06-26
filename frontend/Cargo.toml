@@ -16,7 +16,7 @@ rust-version = "1.65"
 
 # Egui
 egui = "0.22.0"
-ewebsock = { path = "../../ewebsock/ewebsock" }
+ewebsock = { git = "https://github.com/AngelOnFira/ewebsock" }
 eframe = { version = "0.22.0", default-features = false, features = [
     "persistence", "wgpu", "default_fonts"
 ] }
