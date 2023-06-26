@@ -1,5 +1,5 @@
 [package]
-name = "eframe_template"
+name = "egui_ctf"
 version = "0.1.0"
 authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
 edition = "2021"
@@ -25,7 +25,7 @@ members = [
 
 # Egui
 egui = "0.22.0"
-ewebsock = { git = "https://github.com/rerun-io/ewebsock" }
+ewebsock = { path = "../ewebsock/ewebsock" }
 eframe = { version = "0.22.0", default-features = false, features = [
     "persistence", "wgpu", "default_fonts"
 ] }

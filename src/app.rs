@@ -7,7 +7,10 @@ use egui_notify::Toasts;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use crate::panels::{
     hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel, team::TeamPanel,
@@ -34,6 +37,9 @@ pub struct CTFApp {
     toasts: Toasts,
 
     // Other state
+
+    // This will be an arc mutex so we can asynchronously set it when we connect
+    // or disconnect from the server.
     #[serde(skip)]
     connection_state: ConnectionState,
 
@@ -53,28 +59,108 @@ pub struct ClientState {
     pub ctf_state: CTFClientState,
 }
 
-pub enum ConnectionState {
-    Disconnected,
-    Connecting,
-    Connected {
-        ws_sender: WsSender,
-        ws_receiver: WsReceiver,
-    },
+#[derive(Clone)]
+pub struct ConnectionState {
+    inner: Arc<Mutex<ConnectionStateInner>>,
 }
 
-impl ConnectionState {
-    /// Send a message to the backend. Return an error if we're not connected to
-    /// the server.
-    pub fn send_message(&mut self, message: NetworkMessage) -> Result<(), ConnectionStateError> {
-        match self {
-            ConnectionState::Connected { ws_sender, .. } => {
-                ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
-                Ok(())
-            }
-            _ => Err(ConnectionStateError::NotConnected),
+impl Default for ConnectionState {
+    fn default() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(ConnectionStateInner {
+                connection_state: ConnectionStateEnum::Disconnected,
+                message_queue: Vec::new(),
+            })),
         }
     }
 }
+
+pub struct ConnectionStateInner {
+    connection_state: ConnectionStateEnum,
+    message_queue: Vec<NetworkMessage>,
+    ws_sender: Option<WsSender>,
+    ws_receiver: Option<WsReceiver>,
+}
+
+impl ConnectionState {
+    fn send_message(&mut self, message: NetworkMessage) {
+        // If we're connected to the backend, send the message right away. If
+        // we're connecting or disconnected, queue the message to be sent when
+        // we connect.
+
+        // Get access to the inner
+        let mut inner = self.inner.lock().unwrap();
+
+        match inner.connection_state {
+            ConnectionStateEnum::Connected {
+                ref mut ws_sender, ..
+            } => {
+                ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
+            }
+            _ => {
+                inner.message_queue.push(message);
+            }
+        }
+    }
+
+    // Try to empty the queue of messages to send to the backend. This may or
+    // may not send messages.
+    fn empty_queue(&mut self) {
+        // Get access to the inner
+        let mut inner = self.inner.lock().unwrap();
+
+        // If we're connected to the backend, send the message right away. If
+        // we're connecting or disconnected, queue the message to be sent when
+        // we connect.
+        match inner.connection_state {
+            ConnectionStateEnum::Connected {
+                ref mut ws_sender, ..
+            } => {
+                for message in inner.message_queue.drain(..) {
+                    ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn set_state_connecting(&mut self) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.connection_state = ConnectionStateEnum::Connecting;
+    }
+
+    fn set_state_connected(&mut self, ws_sender: WsSender, ws_receiver: WsReceiver) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.connection_state = ConnectionStateEnum::Connected;
+        inner.ws_sender = Some(ws_sender);
+        inner.ws_receiver = Some(ws_receiver);
+    }
+
+    fn get_state(&self) -> ConnectionStateEnum {
+        let inner = self.inner.lock().unwrap();
+        inner.connection_state.clone()
+    }
+}
+
+pub enum ConnectionStateEnum {
+    Disconnected,
+    Connecting,
+    Connected,
+}
+
+// impl ConnectionState {
+//     /// Send a message to the backend. Return an error if we're not connected to
+//     /// the server.
+//     pub fn send_message(&mut self, message: NetworkMessage) -> Result<(), ConnectionStateError> {
+//         match self {
+//             ConnectionState::Connected { ws_sender, .. } => {
+//                 ws_sender.send(WsMessage::Text(serde_json::to_string(&message).unwrap()));
+//                 Ok(())
+//             }
+//             _ => Err(ConnectionStateError::NotConnected),
+//         }
+//     }
+// }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum AuthenticationState {
@@ -96,6 +182,8 @@ impl Display for ConnectionStateError {
 
 impl Default for CTFApp {
     fn default() -> Self {
+        // Start a new thread to send messages to the server. This is a bandaid
+        // to fix
         Self {
             // Panels
             login_panel: LoginPanel::default(),
@@ -106,7 +194,7 @@ impl Default for CTFApp {
             toasts: Toasts::default(),
             // Other state
             websocket_thread_handle: None,
-            connection_state: ConnectionState::Disconnected,
+            connection_state: ConnectionState::default(),
             authentication_state: AuthenticationState::NotAuthenticated,
             client_state: ClientState {
                 ctf_state: CTFClientState::default(),
@@ -130,14 +218,18 @@ impl CTFApp {
     }
 
     fn connect(&mut self, ctx: egui::Context) {
-        self.connection_state = ConnectionState::Connecting;
-        let wakeup = move || ctx.request_repaint(); // wake up UI thread on new message
+        self.connection_state.set_state_connecting();
+
+        let connection_state_clone = self.connection_state.clone();
+
+        let wakeup = move |event: WsEvent| {
+            connection_state_clone.empty_queue();
+            ctx.request_repaint(); // wake up UI thread on new message}
+        };
         match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
-                self.connection_state = ConnectionState::Connected {
-                    ws_sender,
-                    ws_receiver,
-                };
+                self.connection_state
+                    .set_state_connected(ws_sender, ws_receiver);
 
                 info!("Auth status: {:?}", &self.authentication_state);
 
@@ -146,14 +238,10 @@ impl CTFApp {
                 if let AuthenticationState::Authenticated { valid_token } =
                     &self.authentication_state
                 {
-                    if let Err(e) = self
-                        .connection_state
+                    self.connection_state
                         .send_message(NetworkMessage::CTFMessage(CTFMessage::Login(
                             valid_token.to_owned(),
-                        )))
-                    {
-                        info!("Failed to send login token: {}", e);
-                    }
+                        )));
                 }
             }
             Err(error) => {

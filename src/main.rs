@@ -11,7 +11,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "eframe template",
         native_options,
-        Box::new(|cc| Box::new(eframe_template::CTFApp::new(cc))),
+        Box::new(|cc| Box::new(egui_ctf::CTFApp::new(cc))),
     )
 }
 
@@ -36,7 +36,7 @@ fn main() {
             .start(
                 "the_canvas_id",
                 Default::default(),
-                Box::new(|cc| Box::new(eframe_template::CTFApp::new(cc))),
+                Box::new(|cc| Box::new(egui_ctf::CTFApp::new(cc))),
             )
             .await
             .unwrap();
