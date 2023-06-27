@@ -326,12 +326,6 @@ impl eframe::App for CTFApp {
                                         }
                                     },
 
-                                    // The client can't receive submissions
-                                    CTFMessage::SubmitFlag(_) => unreachable!(),
-
-                                    // The client can't receive login requests
-                                    CTFMessage::Login(_) => unreachable!(),
-
                                     // Events that the server sends and we
                                     // should display
                                     CTFMessage::ClientUpdate(event) => match event {
@@ -367,6 +361,17 @@ impl eframe::App for CTFApp {
                                                 .set_duration(Some(Duration::from_secs(5)));
                                         }
                                     },
+
+                                    // The client can't receive any of these
+                                    // messages
+                                    
+                                    // TODO: Redo the enum so that only messages
+                                    // that the client can receive are in this
+                                    // or something
+                                    CTFMessage::SubmitFlag(_)
+                                    | CTFMessage::JoinTeam(_)
+                                    | CTFMessage::CreateTeam(_)
+                                    | CTFMessage::Login(_) => unreachable!(),
                                 }
                             }
                             _ => {}
@@ -434,7 +439,8 @@ impl eframe::App for CTFApp {
                         self.submission_panel.show(ctx, &mut self.connection_state);
 
                         // Show the team panel
-                        self.team_panel.show(ctx, &self.client_state);
+                        self.team_panel
+                            .show(ctx, &self.client_state, &mut self.connection_state);
                     }
                 }
             }

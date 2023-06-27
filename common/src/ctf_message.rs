@@ -13,6 +13,10 @@ pub enum CTFMessage {
     ClientUpdate(ClientUpdate),
     /// Login token being submitted
     Login(String),
+    /// Team token being submitted by player
+    JoinTeam(String),
+    /// Team name being submitted by player
+    CreateTeam(String),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
