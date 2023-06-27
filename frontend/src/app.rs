@@ -8,6 +8,7 @@ use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::{
+    fmt::Debug,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -57,7 +58,7 @@ pub struct CTFApp {
     client_state: ClientState,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ClientState {
     // pub credentials: Option<Credentials>,
     pub ctf_state: CTFClientState,
@@ -104,12 +105,12 @@ impl ConnectionState {
         drop(inner);
 
         // Call the empty queue function in case we're connected
-        self.empty_queue();
+        self.process_message_queue();
     }
 
     // Try to empty the queue of messages to send to the backend. This may or
     // may not send messages.
-    fn empty_queue(&mut self) {
+    fn process_message_queue(&mut self) {
         // Get access to the inner
         let mut inner = self.inner.lock().unwrap();
 
@@ -175,9 +176,32 @@ pub struct WSStateQueue {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub enum AuthenticationState {
+pub struct AuthenticationState {
+    valid_token: Option<String>,
+
+    #[serde(skip)]
+    state: AuthenticationStateEnum,
+}
+
+impl Default for AuthenticationState {
+    fn default() -> Self {
+        Self {
+            valid_token: None,
+            state: AuthenticationStateEnum::NotAuthenticated,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum AuthenticationStateEnum {
     NotAuthenticated,
-    Authenticated { valid_token: String },
+    Authenticated,
+}
+
+impl Default for AuthenticationStateEnum {
+    fn default() -> Self {
+        Self::NotAuthenticated
+    }
 }
 
 pub enum ConnectionStateError {
@@ -206,7 +230,7 @@ impl Default for CTFApp {
             websocket_thread_handle: None,
             connection_state: ConnectionState::default(),
             ws_state_queue: Arc::new(Mutex::new(WSStateQueue { queue: Vec::new() })),
-            authentication_state: AuthenticationState::NotAuthenticated,
+            authentication_state: AuthenticationState::default(),
             client_state: ClientState {
                 ctf_state: CTFClientState::default(),
             },
@@ -246,12 +270,10 @@ impl CTFApp {
 
                 // If we already have a valid login token, send it to the
                 // backend to auth this connection
-                if let AuthenticationState::Authenticated { valid_token } =
-                    &self.authentication_state
-                {
+                if let Some(token) = &self.authentication_state.valid_token {
                     self.connection_state
                         .send_message(NetworkMessage::CTFMessage(CTFMessage::Login(
-                            valid_token.to_owned(),
+                            token.to_owned(),
                         )));
                 }
             }
@@ -279,8 +301,8 @@ impl eframe::App for CTFApp {
             }
         }
 
-        // Now, if we're in an open connection, empty our message queue
-        self.connection_state.empty_queue();
+        // Now, if we're in an open connection, process our message queue
+        self.connection_state.process_message_queue();
 
         let mut save_flag = false;
 
@@ -288,7 +310,7 @@ impl eframe::App for CTFApp {
             ConnectionStateEnum::Disconnected => {
                 self.connect(ctx.clone());
             }
-            ConnectionStateEnum::Connected => {
+            ConnectionStateEnum::Opened => {
                 while let Some(event) = self
                     .connection_state
                     .inner
@@ -302,6 +324,12 @@ impl eframe::App for CTFApp {
                     if let WsEvent::Message(WsMessage::Text(ws_text)) = event {
                         // Deserialize the message
                         let message: NetworkMessage = serde_json::from_str(&ws_text).unwrap();
+
+                        // Debug the state of the app
+                        info!("App state: {:?}", self.client_state);
+                        // info!("Connection state: {:?}", self.connection_state);
+                        info!("Auth state: {:?}", self.authentication_state);
+                        info!("Message: {:?}", message);
 
                         match message {
                             // All messages about the CTF game
@@ -349,8 +377,10 @@ impl eframe::App for CTFApp {
                                                 .set_duration(Some(Duration::from_secs(5)));
 
                                             // Set the authentication state
-                                            self.authentication_state =
-                                                AuthenticationState::Authenticated { valid_token };
+                                            self.authentication_state = AuthenticationState {
+                                                valid_token: Some(valid_token),
+                                                state: AuthenticationStateEnum::Authenticated,
+                                            };
 
                                             // Flag to save the app state
                                             save_flag = true;
@@ -431,12 +461,12 @@ impl eframe::App for CTFApp {
             // Check if we're connected to the server
             if let ConnectionStateEnum::Opened = &self.connection_state.get_state() {
                 // Check if we're authenticated
-                match &self.authentication_state {
-                    AuthenticationState::NotAuthenticated => {
+                match &self.authentication_state.state {
+                    AuthenticationStateEnum::NotAuthenticated => {
                         // Show the login panel
                         self.login_panel.show(ctx, &mut self.connection_state);
                     }
-                    AuthenticationState::Authenticated { valid_token: _ } => {
+                    AuthenticationStateEnum::Authenticated => {
                         // Show the hacker list
                         self.hacker_list.show(ctx, &self.client_state);
 

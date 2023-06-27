@@ -89,11 +89,16 @@ impl CTFServer {
         to.do_send(WsActorMessage::IncomingMessage(message));
     }
 
-    fn broadcast_message(&self, message: NetworkMessage) {
+    fn broadcast_message(&self, message_authed: NetworkMessage, message_unauthed: NetworkMessage) {
         for (_, socket_recipient) in self.sessions.iter() {
-            let _ = socket_recipient
-                .socket
-                .do_send(WsActorMessage::IncomingMessage(message.clone()));
+            match socket_recipient.auth {
+                Auth::Unauthenticated => socket_recipient
+                    .socket
+                    .do_send(WsActorMessage::IncomingMessage(message_unauthed.clone())),
+                Auth::Hacker { discord_id } => socket_recipient
+                    .socket
+                    .do_send(WsActorMessage::IncomingMessage(message_authed.clone())),
+            }
         }
     }
 }
@@ -163,6 +168,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 // If they are unauthenticated, the only message we'll take from
                 // them is a login message.
                 // TODO: Should this also allow public data to be seen?
+                // TODO: What happens if you try to log in after you
                 Auth::Unauthenticated => {
                     if let CTFMessage::Login(token) = ctf_message {
                         // Find any tokens in the database that match this token
