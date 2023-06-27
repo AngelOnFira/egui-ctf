@@ -293,6 +293,21 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         CTFMessage::CreateTeam(team_name) => {
                             // TODO: Check if this user is already on a team
 
+                            // If the team name is empty, return an error
+                            // message
+                            if team_name.is_empty() {
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::Notification(
+                                            "Team name cannot be empty".to_string(),
+                                        ),
+                                    )),
+                                    recipient_clone,
+                                );
+
+                                return None;
+                            }
+
                             // Create a new team in the database
                             let team = team::ActiveModel {
                                 name: Set(team_name),
@@ -355,11 +370,26 @@ impl Handler<IncomingCTFRequest> for CTFServer {
     }
 }
 
-/// Run any updates of state change if needed Any message sending
-/// needs to be done here, since we don't have access to the actor in
-/// the `fut` block above.
+/// Run any updates of state change if needed Any message sending needs to be
+/// done here, since we don't have access to the actor in the `fut` block above.
 ///
-/// This section
+/// This section should take in a list of tasks to be sent to a list of clients.
+/// There are several types of messages
+/// - To a single client
+///     - What team they're on
+///     - Login verification
+/// - To a team
+///     - Team additions
+///     - Team solves
+///     - Challenge note updates
+/// - Broadcast to all connected hackers
+///     - Challenge updates
+/// - Broadcast to all connected web clients
+///     - Scoreboard updates
+///
+/// All of this needs to be passed into this function since we can't run async
+/// code from here. Ideally a list should be passed in, and then we can run all
+/// of the commands in it to update the clients that need updating.
 fn resolve_actor_state(
     result: Option<CTFServerStateChange>,
     actor: &mut CTFServer,

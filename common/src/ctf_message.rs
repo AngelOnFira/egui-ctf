@@ -246,4 +246,6 @@ pub enum ClientUpdate {
     TeamScoredPoint,
     /// This client submitted an incorrect flag
     IncorrectFlag(String),
+    /// General notification
+    Notification(String),
 }

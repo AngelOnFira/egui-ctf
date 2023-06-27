@@ -360,11 +360,16 @@ impl eframe::App for CTFApp {
                                                 .error("Incorrect token")
                                                 .set_duration(Some(Duration::from_secs(5)));
                                         }
+                                        ClientUpdate::Notification(notification) => {
+                                            self.toasts
+                                                .info(notification)
+                                                .set_duration(Some(Duration::from_secs(5)));
+                                        }
                                     },
 
                                     // The client can't receive any of these
                                     // messages
-                                    
+
                                     // TODO: Redo the enum so that only messages
                                     // that the client can receive are in this
                                     // or something

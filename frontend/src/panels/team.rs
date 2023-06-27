@@ -86,7 +86,7 @@ impl TeamPanel {
                     // Send the submission to the server if it's not empty
                     if !self.team_create_team_name_field.is_empty() {
                         connection_state.send_message(NetworkMessage::CTFMessage(
-                            CTFMessage::CreateTeam(self.team_join_token_field.clone()),
+                            CTFMessage::CreateTeam(self.team_create_team_name_field.clone()),
                         ));
                     }
                 }
