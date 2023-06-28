@@ -244,7 +244,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
                                         // Get the updated state from the
                                         // database.
-                                        CTFState::rebuild_state(&db_clone).await;
+                                        CTFState::get_global_data(&db_clone).await;
 
                                         // // Tell every other player that this
                                         // // player has logged in
@@ -415,48 +415,27 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             // Save the hacker in the database
                             hacker.update(&db_clone).await.unwrap();
 
-                            // Get the updated state from the
-                            // database.
-                            CTFState::rebuild_state(&db_clone).await;
-
-                            // // Update the session to be authenticated
-                            // return Some(CTFServerStateChange {
-                            //     discord_id: discord_id.clone(),
-                            //     game_data_update: GameData::LoggedOut,
-                            //     hacker_team_data: {
-                            //         CTFState::get_hacker_team_data(&discord_id, &db_clone).await
-                            //     },
-                            //     hacker_client_data: {
-                            //         CTFState::get_hacker_client_data(&discord_id, &db_clone).await
-                            //     },
-                            //     task: CTFServerStateChangeTask::TeamCreated,
-                            // });
-
-                            // Broadcast this new gamedata to every client
+                            // Broadcast this new GlobalData to every client
                             tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
                                 to: ActorTaskTo::Team(Vec::new()),
                                 message: NetworkMessage::CTFMessage(
                                     CTFMessage::CTFClientStateComponent(
-                                        CTFClientStateComponent::TeamData(
-                                            CTFState::get_hacker_team_data(&discord_id, &db_clone)
-                                                .await,
+                                        CTFClientStateComponent::GlobalData(
+                                            CTFState::get_global_data(&db_clone).await,
                                         ),
                                     ),
                                 ),
                             }));
 
-                            // Update the client on their hacker
+                            // Update the client's TeamData on their hacker
                             // joining a team
                             tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
                                 to: ActorTaskTo::Session(msg.id),
                                 message: NetworkMessage::CTFMessage(
                                     CTFMessage::CTFClientStateComponent(
-                                        CTFClientStateComponent::ClientData(
-                                            CTFState::get_hacker_client_data(
-                                                &discord_id,
-                                                &db_clone,
-                                            )
-                                            .await,
+                                        CTFClientStateComponent::TeamData(
+                                            CTFState::get_hacker_team_data(&discord_id, &db_clone)
+                                                .await,
                                         ),
                                     ),
                                 ),

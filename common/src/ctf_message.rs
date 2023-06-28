@@ -116,7 +116,7 @@ impl CTFState {
     /// Rebuild the state from the database. It might be better to just update
     /// state then flush it to the database or something, but whatever, it's a
     /// cheap operation on this size of data.
-    pub async fn rebuild_state(db: &DatabaseConnection) -> Self {
+    pub async fn get_global_data(db: &DatabaseConnection) -> GlobalData {
         // Get all the teams from the database
         let teams = team::Entity::find()
             .all(db)
@@ -150,7 +150,7 @@ impl CTFState {
             .collect::<Vec<HackerTeam>>();
 
         // Return the new state
-        CTFState {
+        GlobalData {
             hacker_teams: teams,
         }
     }
