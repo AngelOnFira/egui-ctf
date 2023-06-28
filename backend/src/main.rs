@@ -3,12 +3,15 @@ use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
 use ctf_server::CTFServer;
 use env_logger;
+use git2::Repository;
+use repo::Repo;
 use start_connection::start_connection_route;
 
 mod ctf_server;
 mod messages;
 mod start_connection;
 mod ws_conn;
+mod repo;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -16,6 +19,8 @@ async fn main() -> std::io::Result<()> {
     let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
+
+    Repo::parse_repo();
 
     HttpServer::new(move || {
         App::new()
