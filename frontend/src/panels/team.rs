@@ -92,6 +92,23 @@ impl TeamPanel {
                 }
             }
             TeamData::OnTeam(hacker_team) => {
+                ui.heading(&hacker_team.name);
+
+                // Leave team button
+                if ui.button("Leave team").clicked() {
+                    // TODO: Leave team
+                }
+
+                ui.separator();
+
+                ui.heading("Join token");
+                ui.label(&hacker_team.join_token);
+
+                // Copy join token button
+                if ui.button("Copy to clipboard").clicked() {
+                    ui.output_mut(|o| o.copied_text = hacker_team.join_token.clone());
+                }
+
                 ui.separator();
 
                 ui.heading("Team members");

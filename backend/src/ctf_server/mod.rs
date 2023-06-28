@@ -246,6 +246,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         // database.
                                         CTFState::get_global_data(&db_clone).await;
 
+                                        // TODO:
                                         // // Tell every other player that this
                                         // // player has logged in
                                         // tasks.push(ActorTask::SendNetworkMessage(
@@ -394,6 +395,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             // Create a new team in the database
                             let team = team::ActiveModel {
                                 name: Set(team_name),
+                                join_token: Set(Uuid::new_v4().as_simple().to_string()),
                                 ..Default::default()
                             }
                             .insert(&db_clone)

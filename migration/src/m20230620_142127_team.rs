@@ -8,6 +8,7 @@ enum Team {
     Table,
     Id,
     Name,
+    JoinToken
 }
 
 #[async_trait::async_trait]
@@ -26,6 +27,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Team::Name).string().not_null())
+                    .col(ColumnDef::new(Team::JoinToken).string().not_null())
                     .to_owned(),
             )
             .await

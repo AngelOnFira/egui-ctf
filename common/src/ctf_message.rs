@@ -89,6 +89,7 @@ impl CTFState {
 
         TeamData::OnTeam(HackerTeam {
             name: team.name,
+            join_token: team.join_token,
             hackers: hackers
                 .iter()
                 .map(|h| Hacker {
@@ -144,6 +145,7 @@ impl CTFState {
 
                 HackerTeam {
                     name: team.name.clone(),
+                    join_token: team.join_token.clone(),
                     hackers,
                 }
             })
@@ -220,6 +222,7 @@ pub enum ClientData {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HackerTeam {
     pub name: String,
+    pub join_token: String,
     pub hackers: Vec<Hacker>,
 }
 
