@@ -390,6 +390,35 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                     )),
                                     recipient_clone,
                                 );
+
+                                // Return tasks
+                                return tasks;
+                            }
+
+                            // Check if a team by this name already exists in
+                            // the database
+                            let team_exists: bool = team::Entity::find()
+                                .filter(team::Column::Name.eq(&team_name))
+                                .one(&db_clone)
+                                .await
+                                .expect("Failed to check if team exists")
+                                .is_some();
+
+                            // If a team by this name already exists, return an
+                            // error message
+                            if team_exists {
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::Notification(format!(
+                                            "Team '{}' already exists",
+                                            team_name
+                                        )),
+                                    )),
+                                    recipient_clone,
+                                );
+
+                                // Return tasks
+                                return tasks;
                             }
 
                             // Create a new team in the database
@@ -443,6 +472,49 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 ),
                             }));
                         }
+                        CTFMessage::LeaveTeam => {
+                            // check that this hacker is on a team
+
+                            let mut hacker: hacker::ActiveModel =
+                                hacker::Entity::find_by_id(&discord_id)
+                                    .one(&db_clone)
+                                    .await
+                                    .expect("Failed to get hacker")
+                                    .unwrap()
+                                    .into();
+
+                            // Set the hacker's team to empty
+                            hacker.fk_team_id = Set(None);
+
+                            // Save the hacker in the database
+                            hacker.update(&db_clone).await.unwrap();
+
+                            // Broadcast this new GlobalData to every client
+                            tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
+                                to: ActorTaskTo::Team(Vec::new()),
+                                message: NetworkMessage::CTFMessage(
+                                    CTFMessage::CTFClientStateComponent(
+                                        CTFClientStateComponent::GlobalData(
+                                            CTFState::get_global_data(&db_clone).await,
+                                        ),
+                                    ),
+                                ),
+                            }));
+
+                            // Update the client's TeamData on their hacker
+                            // leaving a team
+                            tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
+                                to: ActorTaskTo::Session(msg.id),
+                                message: NetworkMessage::CTFMessage(
+                                    CTFMessage::CTFClientStateComponent(
+                                        CTFClientStateComponent::TeamData(
+                                            CTFState::get_hacker_team_data(&discord_id, &db_clone)
+                                                .await,
+                                        ),
+                                    ),
+                                ),
+                            }));
+                        },
                     }
                 }
             }

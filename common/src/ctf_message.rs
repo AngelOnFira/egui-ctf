@@ -17,6 +17,8 @@ pub enum CTFMessage {
     JoinTeam(String),
     /// Team name being submitted by player
     CreateTeam(String),
+    /// Player leaving their team
+    LeaveTeam,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

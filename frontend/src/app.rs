@@ -406,7 +406,8 @@ impl eframe::App for CTFApp {
                                     CTFMessage::SubmitFlag(_)
                                     | CTFMessage::JoinTeam(_)
                                     | CTFMessage::CreateTeam(_)
-                                    | CTFMessage::Login(_) => unreachable!(),
+                                    | CTFMessage::Login(_)
+                                    | CTFMessage::LeaveTeam => unreachable!(),
                                 }
                             }
                             _ => {}
