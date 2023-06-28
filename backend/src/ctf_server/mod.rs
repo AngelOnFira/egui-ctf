@@ -195,7 +195,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
             // Check if this client is authenticated
             match auth {
                 // If they are unauthenticated, the only message we'll take from
-                // them is a login message.
+                // them is a login message.and
                 // TODO: Should this also allow public data to be seen?
                 // TODO: What happens if you try to log in after you
                 Auth::Unauthenticated => {

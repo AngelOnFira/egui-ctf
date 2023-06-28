@@ -1,8 +1,24 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use git2::Repository;
 
 pub struct Repo {}
+
+pub struct RepoChallenge {
+    // From challenge.json
+    title: String,
+    description: String,
+    link: Option<String>,
+    points: u32,
+    flag: String,
+    active: bool,
+    // Files
+    files: HashMap<String, Vec<u8>>,
+    // Dockerfile
+    dockerfile: Option<String>,
+    // Nomadfile
+    nomadfile: Option<String>,
+}
 
 impl Repo {
     pub fn clone_repo() {
@@ -71,6 +87,26 @@ impl Repo {
             }
         }
 
-        dbg!(&categories);
+        // Find all the challenges in each category
+        let mut challenge_map = HashMap::new();
+        for category in categories {
+            let mut challenges = Vec::new();
+            for entry in fs::read_dir(&category).unwrap() {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.is_dir() {
+                    // Make sure it's not the template or servers folder
+                    if vec!["[template]", "servers", ".git"]
+                        .iter()
+                        .any(|&s| s == path.file_name().unwrap())
+                    {
+                        continue;
+                    } else {
+                        challenges.push(path);
+                    }
+                }
+            }
+            challenge_map.insert(category, challenges);
+        }
     }
 }
