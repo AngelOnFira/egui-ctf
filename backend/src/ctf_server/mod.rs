@@ -7,8 +7,7 @@ use actix::{
 };
 use common::{
     ctf_message::{
-        self, CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, GameData,
-        TeamData,
+        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, GameData, TeamData,
     },
     ClientId, NetworkMessage,
 };
@@ -99,7 +98,7 @@ impl CTFServer {
     }
 
     fn broadcast_message_authenticated(&self, message: NetworkMessage) {
-        for (id, socket_recipient) in self.sessions.iter() {
+        for (_id, socket_recipient) in self.sessions.iter() {
             if let Auth::Hacker { .. } = socket_recipient.auth {
                 let _ = socket_recipient
                     .socket
@@ -514,7 +513,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                     ),
                                 ),
                             }));
-                        },
+                        }
                     }
                 }
             }
@@ -560,7 +559,7 @@ fn resolve_actor_state(
     result: Vec<ActorTask>,
     actor: &mut CTFServer,
     msg: IncomingCTFRequest,
-    recipient_clone: Recipient<WsActorMessage>,
+    _recipient_clone: Recipient<WsActorMessage>,
 ) -> Result<(), ()> {
     for task in result {
         match task {

@@ -8,7 +8,7 @@ enum Team {
     Table,
     Id,
     Name,
-    JoinToken
+    JoinToken,
 }
 
 #[async_trait::async_trait]

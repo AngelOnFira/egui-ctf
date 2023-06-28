@@ -97,9 +97,8 @@ impl TeamPanel {
                 // Leave team button
                 if ui.button("Leave team").clicked() {
                     // TODO: Leave team
-                    connection_state.send_message(NetworkMessage::CTFMessage(
-                        CTFMessage::LeaveTeam,
-                    ));
+                    connection_state
+                        .send_message(NetworkMessage::CTFMessage(CTFMessage::LeaveTeam));
                 }
 
                 ui.separator();
