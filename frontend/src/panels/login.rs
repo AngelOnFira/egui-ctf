@@ -43,7 +43,7 @@ impl LoginPanel {
 
             // Login form
             ui.horizontal(|ui| {
-                ui.label("Team Token:");
+                ui.label("Token:");
                 ui.text_edit_singleline(&mut self.token);
             });
         });

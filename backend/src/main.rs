@@ -1,7 +1,6 @@
 use actix::Actor;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
-use anyhow::Ok;
 use ctf_server::CTFServer;
 use env_logger;
 use git2::Repository;
@@ -21,7 +20,11 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
 
-    Repo::parse_repo();
+    // Load the repo from the repository
+    let repo = Repo::parse_repo();
+
+    // Load all the challenges found into the database
+    repo.update_database().await;
 
     HttpServer::new(move || {
         App::new()

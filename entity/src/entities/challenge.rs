@@ -15,6 +15,7 @@ pub struct Model {
     pub points: i32,
     pub flag: String,
     pub author: String,
+    pub active: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
