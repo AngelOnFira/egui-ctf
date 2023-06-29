@@ -1,6 +1,7 @@
 use actix::Actor;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
+use anyhow::Ok;
 use ctf_server::CTFServer;
 use env_logger;
 use git2::Repository;
