@@ -383,7 +383,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                     )),
                                     recipient_clone,
                                 );
-                                return;
+                                return tasks;
                             }
 
                             // Get the hacker's team
@@ -393,6 +393,35 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             .one(&db_clone)
                             .await
                             .expect("Failed to get team");
+
+                            // Make sure there isn't already a submission for
+                            // this challenge by this team that is correct
+                            let existing_correct_submission = submission::Entity::find()
+                                .filter(
+                                    submission::Column::FkChallengeId
+                                        .eq(challenge.as_ref().unwrap().id),
+                                )
+                                .filter(submission::Column::FkTeamId.eq(team.as_ref().unwrap().id))
+                                .filter(submission::Column::Correct.eq(true))
+                                .one(&db_clone)
+                                .await
+                                .expect("Failed to get existing correct submission");
+
+                            // If there is already a correct submission, then
+                            // tell them that they can't submit another flag for
+                            // the challenge
+                            if existing_correct_submission.is_some() {
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::Notification(
+                                            "Your team has already solved this challenge!"
+                                                .to_string(),
+                                        ),
+                                    )),
+                                    recipient_clone,
+                                );
+                                return tasks;
+                            }
 
                             // Prepare the submission to be saved to the
                             // database
@@ -445,8 +474,10 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         submission.correct = Set(false);
                                     }
 
+                                    dbg!(submission.clone());
+
                                     // Save the submission to the database
-                                    submission.update(&db_clone).await.unwrap();
+                                    submission.insert(&db_clone).await.unwrap();
                                 }
                                 None => {
                                     // Tell them that this challenge doesn't exist
@@ -774,9 +805,14 @@ fn resolve_actor_state(
             ActorTask::UpdateState(update_state) => {
                 match update_state {
                     UpdateState::SessionAuth { auth } => {
-                        // Update the session to be authenticated
-                        let session = actor.sessions.get_mut(&msg.id).unwrap();
-                        session.auth = auth;
+                        // Update the session to be authenticated. If the server
+                        // restarted and a client is still trying to connect,
+                        // then it might be in a bad state here.
+                        if let Some(session) = actor.sessions.get_mut(&msg.id) {
+                            session.auth = auth;
+                        } else {
+                            // TODO: Do some error thing here
+                        }
                     }
                 }
             }
