@@ -1,13 +1,9 @@
-use std::collections::HashSet;
-
 use common::{
-    ctf_message::{CTFChallenge, CTFMessage, CTFState, GameData},
+    ctf_message::{CTFMessage, GameData},
     NetworkMessage,
 };
 use eframe::egui;
-use egui::{epaint::ahash::HashMap, ScrollArea};
-use egui_extras::{Column, TableBuilder};
-use itertools::Itertools;
+
 use serde::{Deserialize, Serialize};
 
 use crate::app::{ClientState, ConnectionState};

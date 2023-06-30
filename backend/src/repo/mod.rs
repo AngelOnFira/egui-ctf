@@ -1,10 +1,8 @@
 use std::{collections::HashMap, fs};
 
-use entity::entities::challenge::{self, ActiveModel};
+use entity::entities::challenge::{self};
 use git2::Repository;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, Database, EntityTrait, QueryFilter, Set};
 use serde::{Deserialize, Serialize};
 
 pub struct Repo {
@@ -38,7 +36,7 @@ pub struct Challenge {
 impl Repo {
     pub fn clone_repo() {
         let url = "https://github.com/h4tt/H4TT-3.0.git";
-        let repo = match Repository::clone(url, "./ctf") {
+        let _repo = match Repository::clone(url, "./ctf") {
             Ok(repo) => repo,
             Err(e) => panic!("failed to clone: {}", e),
         };
@@ -181,7 +179,7 @@ impl Repo {
                     // Save the challenge
                     db_challenge.update(&db).await.unwrap();
                 }
-                
+
                 // If it's not already in the database, create a new challenge
                 None => {
                     let new_challenge = challenge::ActiveModel {

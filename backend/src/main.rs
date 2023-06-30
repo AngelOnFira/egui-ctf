@@ -3,15 +3,15 @@ use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
 use ctf_server::CTFServer;
 use env_logger;
-use git2::Repository;
+
 use repo::Repo;
 use start_connection::start_connection_route;
 
 mod ctf_server;
 mod messages;
+mod repo;
 mod start_connection;
 mod ws_conn;
-mod repo;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -1,8 +1,5 @@
 // use entity::entities::challenge;
-use sea_orm_migration::{
-    prelude::*,
-    sea_orm::{ActiveModelTrait, Set},
-};
+use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -53,7 +50,7 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        let db = manager.get_connection();
+        let _db = manager.get_connection();
         // let transaction = db.begin().await?;
 
         // // Add sample challenges

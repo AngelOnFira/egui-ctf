@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
-use common::ctf_message::{CTFChallenge, CTFState, GameData};
+use common::ctf_message::{CTFChallenge, GameData};
 use eframe::egui;
 use egui::{epaint::ahash::HashMap, ScrollArea};
-use egui_extras::{Column, TableBuilder};
+
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
