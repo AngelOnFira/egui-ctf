@@ -1,5 +1,5 @@
 use common::{
-    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate},
+    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate, TeamData},
     NetworkMessage,
 };
 use core::fmt::Display;
@@ -478,16 +478,19 @@ impl eframe::App for CTFApp {
                         self.team_panel
                             .show(ctx, &self.client_state, &mut self.connection_state);
 
-                        // Show the challenge list panel
-                        self.challenge_list_panel.show(ctx, &self.client_state);
+                        // If we're on a team, show the challenge info
+                        if let TeamData::OnTeam(..) = &self.client_state.ctf_state.team_data {
+                            // Show the challenge list panel
+                            self.challenge_list_panel.show(ctx, &self.client_state);
 
-                        // Show the challenge panel
-                        self.challenge_panel.show(
-                            ctx,
-                            &self.client_state,
-                            &self.challenge_list_panel.visible_challenge,
-                            &mut self.connection_state,
-                        );
+                            // Show the challenge panel
+                            self.challenge_panel.show(
+                                ctx,
+                                &self.client_state,
+                                &self.challenge_list_panel.visible_challenge,
+                                &mut self.connection_state,
+                            );
+                        }
                     }
                 }
             }

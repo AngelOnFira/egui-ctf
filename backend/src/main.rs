@@ -20,6 +20,9 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
 
+    // Download the repo
+    // Repo::clone_repo();
+
     // Load the repo from the repository
     let repo = Repo::parse_repo();
 

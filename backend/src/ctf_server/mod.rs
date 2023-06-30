@@ -371,6 +371,21 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 .await
                                 .expect("Failed to get hacker");
 
+                            // If they aren't on a team, then they can't submit
+                            // a flag. Tell them that.
+                            if hacker.as_ref().unwrap().fk_team_id.is_none() {
+                                CTFServer::send_message_associated(
+                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                        ClientUpdate::Notification(
+                                            "You are not on a team, you can't submit a flag"
+                                                .to_string(),
+                                        ),
+                                    )),
+                                    recipient_clone,
+                                );
+                                return;
+                            }
+
                             // Get the hacker's team
                             let team = team::Entity::find_by_id(
                                 hacker.as_ref().unwrap().fk_team_id.unwrap(),
