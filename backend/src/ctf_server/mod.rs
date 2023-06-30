@@ -11,12 +11,15 @@ use common::{
     },
     ClientId, NetworkMessage,
 };
-use entity::entities::{challenge, hacker, team, token};
+use entity::entities::{challenge, hacker, submission, team, token};
 
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
-use std::{collections::HashMap, time::Duration};
+use std::{
+    collections::HashMap,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 use uuid::Uuid;
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
@@ -362,8 +365,39 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 .await
                                 .expect("Failed to get challenge");
 
+                            // Get the hacker that made this submission
+                            let hacker = hacker::Entity::find_by_id(discord_id)
+                                .one(&db_clone)
+                                .await
+                                .expect("Failed to get hacker");
+
+                            // Get the hacker's team
+                            let team = team::Entity::find_by_id(
+                                hacker.as_ref().unwrap().fk_team_id.unwrap(),
+                            )
+                            .one(&db_clone)
+                            .await
+                            .expect("Failed to get team");
+
+                            // Prepare the submission to be saved to the
+                            // database
+                            let mut submission = submission::ActiveModel {
+                                flag: Set(flag.clone()),
+                                // Get the current time as a string
+                                time: Set(SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_millis()
+                                    .to_string()),
+                                fk_hacker_id: Set(Some(hacker.unwrap().discord_id)),
+                                fk_team_id: Set(Some(team.unwrap().id)),
+                                ..Default::default()
+                            };
+
                             match challenge {
                                 Some(challenge) => {
+                                    submission.fk_challenge_id = Set(Some(challenge.id));
+
                                     // See if this channel's flag matches the
                                     // flag they submitted
                                     if challenge.flag == flag {
@@ -376,7 +410,10 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                                 )),
                                             )),
                                             recipient_clone,
-                                        )
+                                        );
+
+                                        // Change the submission
+                                        submission.correct = Set(true);
                                     } else {
                                         let recipient_clone = recipient_clone.clone();
                                         CTFServer::send_message_associated(
@@ -387,8 +424,14 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                                 )),
                                             )),
                                             recipient_clone,
-                                        )
+                                        );
+
+                                        // Change the submission
+                                        submission.correct = Set(false);
                                     }
+
+                                    // Save the submission to the database
+                                    submission.update(&db_clone).await.unwrap();
                                 }
                                 None => {
                                     // Tell them that this challenge doesn't exist

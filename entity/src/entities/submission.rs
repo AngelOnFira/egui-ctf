@@ -10,7 +10,9 @@ pub struct Model {
     pub id: i32,
     pub flag: String,
     pub time: String,
+    pub correct: bool,
     pub fk_hacker_id: Option<String>,
+    pub fk_team_id: Option<i32>,
     pub fk_challenge_id: Option<i32>,
 }
 
@@ -32,6 +34,14 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Hacker,
+    #[sea_orm(
+        belongs_to = "super::team::Entity",
+        from = "Column::FkTeamId",
+        to = "super::team::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Team,
 }
 
 impl Related<super::challenge::Entity> for Entity {
@@ -43,6 +53,12 @@ impl Related<super::challenge::Entity> for Entity {
 impl Related<super::hacker::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Hacker.def()
+    }
+}
+
+impl Related<super::team::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Team.def()
     }
 }
 

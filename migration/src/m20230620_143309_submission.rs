@@ -9,7 +9,9 @@ enum Submission {
     Id,
     Flag,
     Time,
+    Correct,
     FkHackerId,
+    FkTeamId,
     FkChallengeId,
 }
 
@@ -21,6 +23,12 @@ enum Hacker {
 
 #[derive(Iden)]
 enum Challenge {
+    Table,
+    Id,
+}
+
+#[derive(Iden)]
+enum Team {
     Table,
     Id,
 }
@@ -41,13 +49,21 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Submission::Flag).string().not_null())
-                    .col(ColumnDef::new(Submission::Time).date_time().not_null())
+                    .col(ColumnDef::new(Submission::Time).string().not_null())
+                    .col(ColumnDef::new(Submission::Correct).boolean().not_null())
                     .col(ColumnDef::new(Submission::FkHackerId).string().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("submission_hacker_fk")
                             .from(Submission::Table, Submission::FkHackerId)
                             .to(Hacker::Table, Hacker::DiscordId),
+                    )
+                    .col(ColumnDef::new(Submission::FkTeamId).integer().null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("submission_team_fk")
+                            .from(Submission::Table, Submission::FkTeamId)
+                            .to(Team::Table, Team::Id),
                     )
                     .col(
                         ColumnDef::new(Submission::FkChallengeId)
