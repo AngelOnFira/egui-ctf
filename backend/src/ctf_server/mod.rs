@@ -263,6 +263,22 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         //     },
                                         // ));
 
+                                        // Send this client the current game
+                                        // state
+                                        tasks.push(ActorTask::SendNetworkMessage(
+                                            SendNetworkMessage {
+                                                to: ActorTaskTo::Session(msg.id),
+                                                message: NetworkMessage::CTFMessage(
+                                                    CTFMessage::CTFClientStateComponent(
+                                                        CTFClientStateComponent::GameData(
+                                                            CTFState::get_game_data(&db_clone)
+                                                                .await,
+                                                        ),
+                                                    ),
+                                                ),
+                                            },
+                                        ));
+
                                         // Update this session's auth state
                                         tasks.push(ActorTask::UpdateState(
                                             UpdateState::SessionAuth {

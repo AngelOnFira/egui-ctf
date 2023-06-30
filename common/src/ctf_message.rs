@@ -1,4 +1,4 @@
-use entity::entities::{hacker, team};
+use entity::entities::{challenge, hacker, team};
 use iter_tools::Itertools;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -113,6 +113,32 @@ impl CTFState {
 
         ClientData::LoggedIn {
             username: hacker.username,
+        }
+    }
+
+    // Build the game data
+    pub async fn get_game_data(db: &DatabaseConnection) -> GameData {
+        // Get all the challenges
+        let challenges = challenge::Entity::find()
+            .all(db)
+            .await
+            .expect("Failed to get challenges");
+
+        // TODO: Only send them challenges that their team has unlocked if there
+        // are pre-requisites
+        GameData::LoggedIn {
+            challenges: challenges
+                .iter()
+                .filter(|challenge| challenge.active)
+                .map(|challenge| CTFChallenge {
+                    title: challenge.title.clone(),
+                    category: challenge.category.clone(),
+                    description: challenge.description.clone(),
+                    link: challenge.link.clone(),
+                    points: challenge.points,
+                    author: challenge.author.clone(),
+                })
+                .collect(),
         }
     }
 
@@ -234,7 +260,14 @@ pub struct Hacker {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CTFChallenge {}
+pub struct CTFChallenge {
+    pub title: String,
+    pub category: String,
+    pub description: String,
+    pub link: String,
+    pub points: i32,
+    pub author: String,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientUpdate {
