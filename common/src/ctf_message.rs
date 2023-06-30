@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 pub enum CTFMessage {
     /// A subset of the information stored in the CTF state, to be passed to the client
     CTFClientStateComponent(CTFClientStateComponent),
-    SubmitFlag(String),
+    SubmitFlag {
+        challenge_name: String,
+        flag: String,
+    },
     /// Tell a specific client that something that matters to them has happened
     /// (They submitted a flag correctly a team member went offline, etc.)
     ClientUpdate(ClientUpdate),

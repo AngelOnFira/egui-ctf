@@ -406,7 +406,7 @@ impl eframe::App for CTFApp {
                                     // TODO: Redo the enum so that only messages
                                     // that the client can receive are in this
                                     // or something
-                                    CTFMessage::SubmitFlag(_)
+                                    CTFMessage::SubmitFlag { .. }
                                     | CTFMessage::JoinTeam(_)
                                     | CTFMessage::CreateTeam(_)
                                     | CTFMessage::Login(_)

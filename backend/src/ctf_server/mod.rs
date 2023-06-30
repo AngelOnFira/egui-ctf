@@ -350,42 +350,58 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 Auth::Hacker { discord_id } => {
                     match ctf_message {
                         CTFMessage::CTFClientStateComponent(_) => todo!(),
-                        CTFMessage::SubmitFlag(flag) => {
+                        CTFMessage::SubmitFlag {
+                            challenge_name,
+                            flag,
+                        } => {
                             // Check the database to see if there are any challenges with
-                            // this flag
-                            let correct_flag_challenges: Vec<challenge::Model> =
-                                challenge::Entity::find()
-                                    .filter(challenge::Column::Flag.eq(&flag))
-                                    .all(&db_clone)
-                                    .await
-                                    .expect("Failed to get challenges with flag");
+                            // this name
+                            let challenge = challenge::Entity::find()
+                                .filter(challenge::Column::Title.eq(&challenge_name))
+                                .one(&db_clone)
+                                .await
+                                .expect("Failed to get challenge");
 
-                            // If they solved a challenge, send them a message that they
-                            // solved a challenge
-                            for challenge in &correct_flag_challenges {
-                                let recipient_clone = recipient_clone.clone();
-                                CTFServer::send_message_associated(
-                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                                        ClientUpdate::ScoredPoint(format!(
-                                            "You solved {} for {} points!",
-                                            challenge.title, challenge.points
+                            match challenge {
+                                Some(challenge) => {
+                                    // See if this channel's flag matches the
+                                    // flag they submitted
+                                    if challenge.flag == flag {
+                                        let recipient_clone = recipient_clone.clone();
+                                        CTFServer::send_message_associated(
+                                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                                ClientUpdate::ScoredPoint(format!(
+                                                    "You solved {} for {} points!",
+                                                    challenge.title, challenge.points
+                                                )),
+                                            )),
+                                            recipient_clone,
+                                        )
+                                    } else {
+                                        let recipient_clone = recipient_clone.clone();
+                                        CTFServer::send_message_associated(
+                                            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                                ClientUpdate::ScoredPoint(format!(
+                                                    "That flag didn't solve {}",
+                                                    challenge_name
+                                                )),
+                                            )),
+                                            recipient_clone,
+                                        )
+                                    }
+                                }
+                                None => {
+                                    // Tell them that this challenge doesn't exist
+                                    let recipient_clone = recipient_clone.clone();
+                                    CTFServer::send_message_associated(
+                                        NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                                            ClientUpdate::ScoredPoint(
+                                                "That challenge does not exist".to_string(),
+                                            ),
                                         )),
-                                    )),
-                                    recipient_clone,
-                                )
-                            }
-
-                            // Otherwise, tell them they didn't solve a challenge
-                            if correct_flag_challenges.is_empty() {
-                                let recipient_clone = recipient_clone.clone();
-                                CTFServer::send_message_associated(
-                                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                                        ClientUpdate::ScoredPoint(
-                                            "That flag didn't solve any challenges.".to_string(),
-                                        ),
-                                    )),
-                                    recipient_clone,
-                                )
+                                        recipient_clone,
+                                    )
+                                }
                             }
                         }
                         CTFMessage::ClientUpdate(_) => todo!(),
@@ -481,21 +497,19 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                     }));
 
                                     // Send the hacker their team data
-                                    tasks.push(ActorTask::SendNetworkMessage(
-                                        SendNetworkMessage {
-                                            to: ActorTaskTo::Session(msg.id),
-                                            message: NetworkMessage::CTFMessage(
-                                                CTFMessage::CTFClientStateComponent(
-                                                    CTFClientStateComponent::TeamData(
-                                                        CTFState::get_hacker_team_data(
-                                                            &hacker_id, &db_clone,
-                                                        )
-                                                        .await,
-                                                    ),
+                                    tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
+                                        to: ActorTaskTo::Session(msg.id),
+                                        message: NetworkMessage::CTFMessage(
+                                            CTFMessage::CTFClientStateComponent(
+                                                CTFClientStateComponent::TeamData(
+                                                    CTFState::get_hacker_team_data(
+                                                        &hacker_id, &db_clone,
+                                                    )
+                                                    .await,
                                                 ),
                                             ),
-                                        },
-                                    ));
+                                        ),
+                                    }));
 
                                     // Send the hacker a notification that they
                                     // joined a team
