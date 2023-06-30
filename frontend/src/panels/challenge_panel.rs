@@ -58,7 +58,23 @@ impl ChallengePanel {
                     ui.label(&format!("Category: {}", challenge.category));
                     ui.label(&format!("Points: {}", challenge.points));
                     ui.separator();
-                    ui.label(&challenge.description);
+                    if ui.label(&challenge.description).clicked() {
+                        ui.output_mut(|o| {
+                            o.copied_text = challenge.description.clone();
+                        })
+                    };
+
+                    // Copy description button
+                    if ui.button("Copy to clipboard").clicked() {
+                        ui.output_mut(|o| o.copied_text = challenge.description.clone());
+                    }
+
+                    // If there is a link, show it
+                    if !challenge.link.is_empty() {
+                        ui.label("");
+                        ui.hyperlink(&challenge.link);
+                    }
+
                     ui.separator();
 
                     // Login form

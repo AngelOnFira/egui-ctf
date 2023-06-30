@@ -104,7 +104,18 @@ impl TeamPanel {
                 ui.separator();
 
                 ui.heading("Team join token");
-                ui.label(&hacker_team.join_token);
+
+                if ui
+                    .label(&hacker_team.join_token)
+                    // .on_hover_text("Click to copy")
+                    // TODO: this doesn't work. Probably has to do with moving a
+                    // window when you click.
+                    .clicked()
+                {
+                    ui.output_mut(|o| {
+                        o.copied_text = hacker_team.join_token.clone();
+                    })
+                };
 
                 // Copy join token button
                 if ui.button("Copy to clipboard").clicked() {
