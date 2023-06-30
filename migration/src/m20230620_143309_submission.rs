@@ -7,9 +7,10 @@ pub struct Migration;
 enum Submission {
     Table,
     Id,
+    Flag,
+    Time,
     FkHackerId,
     FkChallengeId,
-    Flag,
 }
 
 #[derive(Iden)]
@@ -40,6 +41,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Submission::Flag).string().not_null())
+                    .col(ColumnDef::new(Submission::Time).date_time().not_null())
                     .col(ColumnDef::new(Submission::FkHackerId).string().null())
                     .foreign_key(
                         ForeignKey::create()
