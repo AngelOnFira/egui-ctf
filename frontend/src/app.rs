@@ -14,7 +14,8 @@ use std::{
 };
 
 use crate::panels::{
-    hacker_list::HackerList, login::LoginPanel, submission::SubmissionPanel, team::TeamPanel, challenge_list::ChallengePanel,
+    challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,
+    login::LoginPanel, team::TeamPanel,
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -28,12 +29,10 @@ pub struct CTFApp {
     hacker_list: HackerList,
 
     #[serde(skip)]
-    submission_panel: SubmissionPanel,
-
-    #[serde(skip)]
     team_panel: TeamPanel,
 
-    #[serde(skip)]
+    challenge_list_panel: ChallengeList,
+
     challenge_panel: ChallengePanel,
 
     // Other visuals
@@ -225,8 +224,8 @@ impl Default for CTFApp {
             // Panels
             login_panel: LoginPanel::default(),
             hacker_list: HackerList::default(),
-            submission_panel: SubmissionPanel::default(),
             team_panel: TeamPanel::default(),
+            challenge_list_panel: ChallengeList::default(),
             challenge_panel: ChallengePanel::default(),
             // Other visuals
             toasts: Toasts::default(),
@@ -475,16 +474,20 @@ impl eframe::App for CTFApp {
                         // Show the hacker list
                         self.hacker_list.show(ctx, &self.client_state);
 
-                        // Show the submission panel
-                        self.submission_panel.show(ctx, &mut self.connection_state);
-
                         // Show the team panel
                         self.team_panel
                             .show(ctx, &self.client_state, &mut self.connection_state);
 
+                        // Show the challenge list panel
+                        self.challenge_list_panel.show(ctx, &self.client_state);
+
                         // Show the challenge panel
-                        self.challenge_panel
-                            .show(ctx, &self.client_state);
+                        self.challenge_panel.show(
+                            ctx,
+                            &self.client_state,
+                            &self.challenge_list_panel.visible_challenge,
+                            &mut self.connection_state,
+                        );
                     }
                 }
             }

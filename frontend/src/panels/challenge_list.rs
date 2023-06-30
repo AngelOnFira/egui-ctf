@@ -1,28 +1,31 @@
+use std::collections::HashSet;
+
 use common::ctf_message::{CTFChallenge, CTFState, GameData};
 use eframe::egui;
 use egui::{epaint::ahash::HashMap, ScrollArea};
 use egui_extras::{Column, TableBuilder};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::app::ClientState;
 
-pub struct ChallengePanel {
-    enabled: bool,
-    visible: bool,
+#[derive(Deserialize, Serialize)]
+pub struct ChallengeList {
+    // Challenge that should be displayed
+    pub visible_challenge: Option<String>,
 }
 
-impl Default for ChallengePanel {
+impl Default for ChallengeList {
     fn default() -> Self {
         Self {
-            enabled: true,
-            visible: true,
+            visible_challenge: None,
         }
     }
 }
 
-impl ChallengePanel {
+impl ChallengeList {
     fn name(&self) -> &'static str {
-        "Challenges"
+        "Challenge"
     }
 
     pub fn show(&mut self, ctx: &egui::Context, ctf_state: &ClientState) {
@@ -65,7 +68,9 @@ impl ChallengePanel {
                         if ui
                             .button(format!("{} ({} points)", challenge.title, challenge.points))
                             .clicked()
-                        {}
+                        {
+                            self.visible_challenge = Some(challenge.title.clone());
+                        }
                     }
                 }
             }
