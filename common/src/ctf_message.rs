@@ -1,4 +1,6 @@
-use entity::entities::{challenge, hacker, team};
+use std::{collections::HashMap, hash::Hash};
+
+use entity::entities::{challenge, hacker, submission, team};
 use iter_tools::Itertools;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -150,7 +152,7 @@ impl CTFState {
     /// cheap operation on this size of data.
     pub async fn get_global_data(db: &DatabaseConnection) -> GlobalData {
         // Get all the teams from the database
-        let teams = team::Entity::find()
+        let database_teams = team::Entity::find()
             .all(db)
             .await
             .expect("Failed to get all teams");
@@ -162,7 +164,8 @@ impl CTFState {
             .expect("Failed to get all players");
 
         // Sort the teams by username
-        let teams = teams
+        let teams = database_teams
+            .clone()
             .iter()
             .sorted_by(|a, b| a.name.cmp(&b.name))
             .map(|team| {
@@ -181,6 +184,23 @@ impl CTFState {
                 }
             })
             .collect::<Vec<HackerTeam>>();
+
+        // Get the scoreboard data
+
+        // Create a map from team id to team name
+        let team_names = teams.clone()
+            .iter()
+            .map(|team| (team.name.clone(), team.))
+            .collect::<HashMap<TeamId, TeamName>>();
+
+        // Find all the correct submissions
+        let solves = submission::Entity::find()
+            .filter(submission::Column::Correct.eq(true))
+            .all(db)
+            .await
+            .expect("Failed to get all submissions");
+
+        // let scoreboard: Scoreboard = teams.i
 
         // Return the new state
         GlobalData {
@@ -230,6 +250,23 @@ pub enum CTFClientStateComponent {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GlobalData {
     pub hacker_teams: Vec<HackerTeam>,
+    pub scoreboard: Scoreboard,
+}
+
+pub type TeamId = i32;
+pub type TeamName = String;
+
+/// For the scoreboard, we're going to need to know what solves the team has
+/// made, and at what times.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Scoreboard {
+    pub teams: HashMap<TeamName, Vec<Solve>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Solve {
+    pub points: u32,
+    pub time: u128,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
