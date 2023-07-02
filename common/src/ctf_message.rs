@@ -188,10 +188,11 @@ impl CTFState {
         // Get the scoreboard data
 
         // Create a map from team id to team name
-        let team_names = teams.clone()
+        let team_names = database_teams
+            .clone()
             .iter()
-            .map(|team| (team.name.clone(), team.))
-            .collect::<HashMap<TeamId, TeamName>>();
+            .map(|team| (team.name.clone(), team.id))
+            .collect::<HashMap<TeamName, TeamId>>();
 
         // Find all the correct submissions
         let solves = submission::Entity::find()
@@ -200,11 +201,45 @@ impl CTFState {
             .await
             .expect("Failed to get all submissions");
 
-        // let scoreboard: Scoreboard = teams.i
+        let mut scoreboard: Scoreboard = Scoreboard {
+            teams: HashMap::new(),
+        };
+        for team in teams.clone() {
+            // Get all the solves this team has made
+            let solves = submission::Entity::find()
+                .filter(submission::Column::Correct.eq(true))
+                .filter(submission::Column::FkTeamId.eq(*team_names.get(&team.name).unwrap()))
+                .all(db)
+                .await
+                .expect("Failed to get all submissions");
+
+            for solve in solves {
+                // TODO: Check that we're not giving multiple points for the
+                // same challenge
+
+                // Get the challenge from the database
+                let challenge = challenge::Entity::find()
+                    .filter(challenge::Column::Id.eq(solve.fk_challenge_id))
+                    .one(db)
+                    .await
+                    .expect("Failed to get challenge")
+                    .unwrap();
+
+                scoreboard
+                    .teams
+                    .entry(team.name.clone())
+                    .or_insert(Vec::new())
+                    .push(Solve {
+                        points: challenge.points as u32,
+                        time: solve.time.parse().unwrap(),
+                    });
+            }
+        }
 
         // Return the new state
         GlobalData {
             hacker_teams: teams,
+            scoreboard,
         }
     }
 }
