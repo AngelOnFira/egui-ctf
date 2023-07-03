@@ -328,6 +328,24 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                                 ),
                                             },
                                         ));
+
+                                        // Update the client with the current
+                                        // scoreboard
+                                        tasks.push(ActorTask::SendNetworkMessage(
+                                            SendNetworkMessage {
+                                                to: ActorTaskTo::Session(msg.id),
+                                                message: NetworkMessage::CTFMessage(
+                                                    CTFMessage::CTFClientStateComponent(
+                                                        CTFClientStateComponent::GlobalData(
+                                                            CTFState::get_global_data(
+                                                                &db_clone,
+                                                            )
+                                                            .await,
+                                                        ),
+                                                    ),
+                                                ),
+                                            },
+                                        ));
                                     }
                                     // If this token doesn't have a hacker
                                     // associated with it, something is wrong.
