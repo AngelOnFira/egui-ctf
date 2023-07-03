@@ -6,7 +6,7 @@ use common::{
 };
 use eframe::egui;
 use egui::{
-    plot::{Corner, Legend, Line, Plot},
+    plot::{Corner, Legend, Line, MarkerShape, Plot, Points},
     remap,
 };
 use egui_extras::{Column, TableBuilder};
@@ -37,9 +37,6 @@ impl ScoreboardPanel {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
-        let n = 100;
-        let mut team_scores = Vec::new();
-
         if let Some(global_state) = &ctf_state.ctf_state.global_data {
             // Store the lowest time solve. The CTF will "Start 20 minutes
             // before that" for now. Later, we can add a "Start at" field to the
@@ -54,41 +51,48 @@ impl ScoreboardPanel {
                 .min()
                 .unwrap_or(0);
 
-            for (team_name, solves) in &global_state.scoreboard.teams {
-                // Iterate over this team's scores. Make sure to sort them by
-                // time. The time is stored in milliseconds since the epoch, so
-                // translate it to minutes.
-                let mut score_values: Vec<[f64; 2]> = solves
-                    .iter()
-                    .sorted_by(|a, b| a.time.cmp(&b.time))
-                    .map(|s| {
-                        [
-                            (s.time - lowest_time) as f64 / 1000.0 / 60.0,
-                            s.points as f64,
-                        ]
-                    })
-                    .collect();
+            Plot::new("custom_axes")
+                .legend(Legend::default().position(Corner::RightBottom))
+                .width(400.0)
+                .height(200.0)
+                .show(ui, |plot_ui| {
+                    for (team_name, solves) in &global_state.scoreboard.teams {
+                        // Iterate over this team's scores. Make sure to sort them by
+                        // time. The time is stored in milliseconds since the epoch, so
+                        // translate it to minutes.
 
-                // Add a point to the start at (0, 0) so that the line starts
-                // there.
-                score_values.insert(0, [0.0, 0.0]);
+                        // A team's line of score
+                        plot_ui.line(Line::new(
+                            solves.iter().sorted_by(|a, b| a.time.cmp(&b.time)).fold(
+                                vec![[0.0, 0.0]],
+                                |mut acc, s| {
+                                    acc.push([
+                                        (s.time - lowest_time) as f64 / 1000.0 / 60.0,
+                                        s.points as f64,
+                                    ]);
+                                    acc
+                                },
+                            ),
+                        ));
 
-                let line = Line::new(score_values);
-
-                team_scores.push(line);
-            }
+                        // A team's points for each score
+                        solves
+                            .iter()
+                            .sorted_by(|a, b| a.time.cmp(&b.time))
+                            .map(|s| {
+                                Points::new(vec![[
+                                    (s.time - lowest_time) as f64 / 1000.0 / 60.0,
+                                    s.points as f64,
+                                ]])
+                                .name(team_name)
+                                .filled(true)
+                                .radius(3.0)
+                                .shape(MarkerShape::Circle)
+                            })
+                            .for_each(|p| plot_ui.points(p));
+                    }
+                })
+                .response;
         }
-
-        Plot::new("custom_axes")
-            .legend(Legend::default().position(Corner::RightBottom))
-            .width(400.0)
-            .height(200.0)
-            .show(ui, |plot_ui| {
-                // plot_ui.line(CustomAxisDemo::logistic_fn());
-                for line in team_scores {
-                    plot_ui.line(line.name("Line with fill"));
-                }
-            })
-            .response;
     }
 }
