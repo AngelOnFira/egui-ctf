@@ -55,6 +55,33 @@ impl ScoreboardPanel {
                 .legend(Legend::default().position(Corner::RightBottom))
                 .width(400.0)
                 .height(200.0)
+                .center_y_axis(true)
+                .allow_drag(false)
+                .show_x(true)
+                .auto_bounds_x()
+                .auto_bounds_y()
+                .label_formatter(|name, value| {
+                    let mut format_string = String::new();
+                    // If the name is has something, add it to the string first,
+                    // followed by a newline
+                    // TODO: Why isn't this working?
+                    if !name.is_empty() {
+                        format_string.push_str(&format!("{}\n", name));
+                    }
+                    // Next, add the time and point data
+                    format_string.push_str(&format!(
+                        "{:.0} points\n{}",
+                        value.y,
+                        format!(
+                            "{:02}:{:02}:{:02}",
+                            (value.x / 60.0).floor(),
+                            (value.x % 60.0).floor(),
+                            (value.x % 1.0 * 60.0).floor()
+                        )
+                    ));
+
+                    format_string
+                })
                 .show(ui, |plot_ui| {
                     for (team_name, solves) in &global_state.scoreboard.teams {
                         // Iterate over this team's scores. Make sure to sort them by
