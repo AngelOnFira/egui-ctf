@@ -15,7 +15,7 @@ use std::{
 
 use crate::panels::{
     challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,
-    login::LoginPanel, team::TeamPanel,
+    login::LoginPanel, team::TeamPanel, scoreboard::ScoreboardPanel,
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -34,6 +34,9 @@ pub struct CTFApp {
     challenge_list_panel: ChallengeList,
 
     challenge_panel: ChallengePanel,
+
+    #[serde(skip)]
+    scoreboard_panel: ScoreboardPanel,
 
     // Other visuals
     #[serde(skip)]
@@ -227,6 +230,7 @@ impl Default for CTFApp {
             team_panel: TeamPanel::default(),
             challenge_list_panel: ChallengeList::default(),
             challenge_panel: ChallengePanel::default(),
+            scoreboard_panel: ScoreboardPanel::default(),
             // Other visuals
             toasts: Toasts::default(),
             // Other state
@@ -491,6 +495,9 @@ impl eframe::App for CTFApp {
                                 &mut self.connection_state,
                             );
                         }
+
+                        // Show the scoreboard
+                        self.scoreboard_panel.show(ctx, &self.client_state);
                     }
                 }
             }

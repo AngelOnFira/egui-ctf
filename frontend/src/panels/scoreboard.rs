@@ -1,170 +1,94 @@
+use std::f64::consts::TAU;
+
 use common::{
     ctf_message::{CTFMessage, TeamData},
     NetworkMessage,
 };
 use eframe::egui;
+use egui::{
+    plot::{Corner, Legend, Line, Plot},
+    remap,
+};
 use egui_extras::{Column, TableBuilder};
+use itertools::Itertools;
 
 use crate::app::{ClientState, ConnectionState};
 
-pub struct ScoreboardPanel {
-    enabled: bool,
-    visible: bool,
-    team_join_token_field: String,
-    team_create_team_name_field: String,
-}
+pub struct ScoreboardPanel {}
 
 impl Default for ScoreboardPanel {
     fn default() -> Self {
-        Self {
-            enabled: true,
-            visible: true,
-            team_join_token_field: String::new(),
-            team_create_team_name_field: String::new(),
-        }
+        Self {}
     }
 }
 
 impl ScoreboardPanel {
     fn name(&self) -> &'static str {
-        "Team"
+        "Scoreboard"
     }
 
-    pub fn show(
-        &mut self,
-        ctx: &egui::Context,
-        ctf_state: &ClientState,
-        connection_state: &mut ConnectionState,
-    ) {
+    pub fn show(&mut self, ctx: &egui::Context, ctf_state: &ClientState) {
         egui::Window::new(self.name())
             .resizable(true)
             .default_width(280.0)
             .show(ctx, |ui| {
-                self.ui(ui, ctf_state, connection_state);
+                self.ui(ui, ctf_state);
             });
     }
 
-    fn ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        ctf_state: &ClientState,
-        connection_state: &mut ConnectionState,
-    ) {
-        match &ctf_state.ctf_state.team_data {
-            TeamData::NoTeam => {
-                // Join a team
-                ui.heading("Join Team");
+    fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
+        let n = 100;
+        let mut team_scores = Vec::new();
 
-                // Join team token field
-                ui.horizontal(|ui| {
-                    ui.label("Team token:");
-                    ui.text_edit_singleline(&mut self.team_join_token_field);
-                });
+        if let Some(global_state) = &ctf_state.ctf_state.global_data {
+            // Store the lowest time solve. The CTF will "Start 20 minutes
+            // before that" for now. Later, we can add a "Start at" field to the
+            // CTF in the database.
+            // TODO: this ^
+            let lowest_time = global_state
+                .scoreboard
+                .teams
+                .iter()
+                .map(|(_, solves)| solves.iter().map(|s| s.time).min())
+                .flatten()
+                .min()
+                .unwrap_or(0);
 
-                // Join team button
-                if ui.button("Join team").clicked() {
-                    // Send the submission to the server if it's not empty
-                    if !self.team_join_token_field.is_empty() {
-                        connection_state.send_message(NetworkMessage::CTFMessage(
-                            CTFMessage::JoinTeam(self.team_join_token_field.clone()),
-                        ));
-                    }
-                }
-
-                ui.separator();
-
-                ui.heading("Create Team");
-
-                // Create team form
-                ui.horizontal(|ui| {
-                    ui.label("Team name:");
-                    ui.text_edit_singleline(&mut self.team_create_team_name_field);
-                });
-
-                // Create team button
-                if ui.button("Create team").clicked() {
-                    // Send the submission to the server if it's not empty
-                    if !self.team_create_team_name_field.is_empty() {
-                        connection_state.send_message(NetworkMessage::CTFMessage(
-                            CTFMessage::CreateTeam(self.team_create_team_name_field.clone()),
-                        ));
-                    }
-                }
-            }
-            TeamData::OnTeam(hacker_team) => {
-                ui.heading(&hacker_team.name);
-
-                // Leave team button
-                if ui.button("Leave team").clicked() {
-                    // TODO: Leave team
-                    connection_state
-                        .send_message(NetworkMessage::CTFMessage(CTFMessage::LeaveTeam));
-                }
-
-                ui.separator();
-
-                ui.heading("Team join token");
-
-                if ui
-                    .label(&hacker_team.join_token)
-                    // .on_hover_text("Click to copy")
-                    // TODO: this doesn't work. Probably has to do with moving a
-                    // window when you click.
-                    .clicked()
-                {
-                    ui.output_mut(|o| {
-                        o.copied_text = hacker_team.join_token.clone();
+            for (team_name, solves) in &global_state.scoreboard.teams {
+                // Iterate over this team's scores. Make sure to sort them by
+                // time. The time is stored in milliseconds since the epoch, so
+                // translate it to minutes.
+                let mut score_values: Vec<[f64; 2]> = solves
+                    .iter()
+                    .sorted_by(|a, b| a.time.cmp(&b.time))
+                    .map(|s| {
+                        [
+                            (s.time - lowest_time) as f64 / 1000.0 / 60.0,
+                            s.points as f64,
+                        ]
                     })
-                };
+                    .collect();
 
-                // Copy join token button
-                if ui.button("Copy to clipboard").clicked() {
-                    ui.output_mut(|o| o.copied_text = hacker_team.join_token.clone());
-                }
+                // Add a point to the start at (0, 0) so that the line starts
+                // there.
+                score_values.insert(0, [0.0, 0.0]);
 
-                ui.separator();
+                let line = Line::new(score_values);
 
-                ui.heading("Team members");
-
-                ui.add_enabled_ui(self.enabled, |ui| {
-                    let table = TableBuilder::new(ui)
-                        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                        .column(Column::auto())
-                        .column(Column::initial(100.0).range(40.0..=300.0))
-                        .column(Column::initial(100.0).at_least(40.0).clip(true))
-                        .column(Column::remainder())
-                        .min_scrolled_height(0.0);
-
-                    // Team member list
-                    table
-                        .header(20.0, |mut header| {
-                            header.col(|ui| {
-                                ui.strong("Member");
-                            });
-                            header.col(|ui| {
-                                ui.strong("Challenge");
-                            });
-                            header.col(|ui| {
-                                ui.strong("Status");
-                            });
-                        })
-                        .body(|mut body| {
-                            for hacker in vec!["hacker1", "hacker2", "hacker3"] {
-                                body.row(20.0, |mut row| {
-                                    row.col(|ui| {
-                                        ui.label(hacker);
-                                    });
-                                    row.col(|ui| {
-                                        ui.label("test");
-                                    });
-                                    row.col(|ui| {
-                                        ui.label("test");
-                                    });
-                                });
-                            }
-                        });
-                });
+                team_scores.push(line);
             }
         }
+
+        Plot::new("custom_axes")
+            .legend(Legend::default().position(Corner::RightBottom))
+            .width(400.0)
+            .height(200.0)
+            .show(ui, |plot_ui| {
+                // plot_ui.line(CustomAxisDemo::logistic_fn());
+                for line in team_scores {
+                    plot_ui.line(line.name("Line with fill"));
+                }
+            })
+            .response;
     }
 }
