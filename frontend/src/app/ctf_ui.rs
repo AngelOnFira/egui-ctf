@@ -97,6 +97,8 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                 }
             });
 
+            ui.separator();
+
             ui.heading("Settings");
             egui::ComboBox::from_label("Theme")
                 .selected_text(format!("{:?}", ctf_app.ui_theme))
@@ -106,6 +108,8 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Mocha, "Mocha");
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Latte, "Latte");
                 });
+
+            ui.separator();
 
             // If we're authenticated, show the hacker list
             if let AuthenticationStateEnum::Authenticated = &ctf_app.authentication_state.state {
