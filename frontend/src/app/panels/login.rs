@@ -9,7 +9,7 @@ use crate::app::ConnectionState;
 pub struct LoginPanel {
     enabled: bool,
     visible: bool,
-    token: String,
+    pub token: String,
 }
 
 impl Default for LoginPanel {

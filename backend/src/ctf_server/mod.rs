@@ -166,6 +166,7 @@ enum ActorTask {
 
 enum UpdateState {
     SessionAuth { auth: Auth },
+    Logout,
 }
 
 struct SendNetworkMessage {
@@ -550,6 +551,11 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                         CTFMessage::ClientUpdate(_) => todo!(),
                         CTFMessage::Login(_) => todo!(),
+                        CTFMessage::Logout => {
+                            // If a client wants to log out, deauthenticate
+                            // their stream
+                            tasks.push(ActorTask::UpdateState(UpdateState::Logout));
+                        }
                         CTFMessage::JoinTeam(token) => {
                             // Make sure the token isn't empty
                             if token.is_empty() {
@@ -866,6 +872,14 @@ fn resolve_actor_state(
                         // then it might be in a bad state here.
                         if let Some(session) = actor.sessions.get_mut(&msg.id) {
                             session.auth = auth;
+                        } else {
+                            // TODO: Do some error thing here
+                        }
+                    }
+                    UpdateState::Logout => {
+                        // Update the session to be unauthenticated
+                        if let Some(session) = actor.sessions.get_mut(&msg.id) {
+                            session.auth = Auth::Unauthenticated;
                         } else {
                             // TODO: Do some error thing here
                         }

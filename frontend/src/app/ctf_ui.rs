@@ -1,13 +1,15 @@
 use common::ctf_message::TeamData;
+use eframe::App;
 use egui::FontFamily::Proportional;
 use egui::FontId;
 use egui::TextStyle::*;
+use std::time::Duration;
 
 use crate::CTFApp;
 
-use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, CTFUiWindow, UiTheme};
+use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, CTFUIWindow, UiTheme};
 
-pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
+pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Frame) {
     egui::SidePanel::left("side_panel").show(ctx, |ui| {
         // Set the egui theme
         catppuccin_egui::set_theme(
@@ -22,48 +24,68 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
 
         ui.heading("Windows");
 
-        // let style_clone = (*ctx.style()).clone();
-        // ctx.style().text_styles = [(Button, FontId::new(24.0, Proportional))].into();
-        // ui.style_mut().text_styles = ctx.style().text_styles;
-
         ui.vertical_centered_justified(|ui| {
-            ui.style_mut().text_styles = [(Button, FontId::new(20.0, Proportional))].into();
-
-            // Scoreboard window button
-            if ui.button("Scoreboard").clicked() {
-                ctf_app.current_window = CTFUiWindow::Scoreboard;
-            }
+            ui.style_mut().text_styles = [(Button, FontId::new(18.0, Proportional))].into();
 
             // Check if we're connected to the server
             if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
+                // Scoreboard window button
+                if ui.button("Scoreboard").clicked() {
+                    ctf_app.current_window = CTFUIWindow::Scoreboard;
+                }
                 // Check if we're authenticated
                 match &ctf_app.authentication_state.state {
                     AuthenticationStateEnum::NotAuthenticated => {
                         // Login window button
                         if ui.button("Login").clicked() {
-                            ctf_app.current_window = CTFUiWindow::Login;
+                            ctf_app.current_window = CTFUIWindow::Login;
                         }
                     }
                     AuthenticationStateEnum::Authenticated => {
                         // Team window button
                         if ui.button("Team").clicked() {
-                            ctf_app.current_window = CTFUiWindow::Team;
+                            ctf_app.current_window = CTFUIWindow::Team;
                         }
 
                         // If we're on a team, show the challenge info
                         if let TeamData::OnTeam(..) = &ctf_app.client_state.ctf_state.team_data {
                             // Challenges window button
                             if ui.button("Challenges").clicked() {
-                                ctf_app.current_window = CTFUiWindow::Challenge;
+                                ctf_app.current_window = CTFUIWindow::Challenge;
+                            }
+                        }
+
+                        // Logout button
+                        if ui.button("Logout").clicked() {
+                            ctf_app
+                                .authentication_state
+                                .logout(&mut ctf_app.connection_state);
+
+                            // Remove the token from the login screen
+                            ctf_app.login_panel.token = String::new();
+
+                            // Change the screen to the scoreboard
+                            ctf_app.current_window = CTFUIWindow::Scoreboard;
+
+                            // Add a toast to say we logged out
+                            ctf_app
+                                .toasts
+                                .info("Logged out successfully")
+                                .set_duration(Some(Duration::from_secs(5)));
+
+                            // Force the storage to save
+                            if let Some(storage) = frame.storage_mut() {
+                                ctf_app.save(storage);
                             }
                         }
                     }
                 }
+            } else {
+                // If we're not connected to the server, show a connecting
+                // notice
+                // ui.label("Connecting...");
             }
         });
-
-        // // Undo the previous style change
-        // ui.set_style(style_clone);
 
         ui.heading("Settings");
         egui::ComboBox::from_label("Theme")
@@ -81,13 +103,13 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
         if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
             // Display the current window
             match &ctf_app.current_window {
-                CTFUiWindow::Login => {
+                CTFUIWindow::Login => {
                     // Show the login panel
                     ctf_app
                         .login_panel
                         .window(ctx, &mut ctf_app.connection_state);
                 }
-                CTFUiWindow::Team => {
+                CTFUIWindow::Team => {
                     // Show the team panel
                     ctf_app.team_panel.window(
                         ctx,
@@ -98,7 +120,7 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
                     // Show the hacker list
                     ctf_app.hacker_list.window(ctx, &ctf_app.client_state);
                 }
-                CTFUiWindow::Challenge => {
+                CTFUIWindow::Challenge => {
                     // Show the challenge list panel
                     ctf_app
                         .challenge_list_panel
@@ -112,7 +134,7 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
                         &mut ctf_app.connection_state,
                     );
                 }
-                CTFUiWindow::Scoreboard => {
+                CTFUIWindow::Scoreboard => {
                     // Show the scoreboard
                     ctf_app.scoreboard_panel.ui(ui, &ctf_app.client_state);
                 }

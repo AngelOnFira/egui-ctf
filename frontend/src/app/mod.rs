@@ -71,11 +71,11 @@ pub struct CTFApp {
     ui_theme: UiTheme,
 
     #[serde(skip)]
-    current_window: CTFUiWindow,
+    current_window: CTFUIWindow,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-pub enum CTFUiWindow {
+pub enum CTFUIWindow {
     Login,
     Team,
     Challenge,
@@ -114,6 +114,16 @@ impl Default for AuthenticationState {
             valid_token: None,
             state: AuthenticationStateEnum::NotAuthenticated,
         }
+    }
+}
+
+impl AuthenticationState {
+    pub fn logout(&mut self, connection_state: &mut ConnectionState) {
+        self.valid_token = None;
+        self.state = AuthenticationStateEnum::NotAuthenticated;
+
+        // Send a logout message to the backend
+        connection_state.send_message(NetworkMessage::CTFMessage(CTFMessage::Logout));
     }
 }
 
@@ -162,7 +172,7 @@ impl Default for CTFApp {
                 ctf_state: CTFClientState::default(),
             },
             ui_theme: UiTheme::Frappe,
-            current_window: CTFUiWindow::Scoreboard,
+            current_window: CTFUIWindow::Scoreboard,
         }
     }
 }
@@ -260,11 +270,11 @@ impl eframe::App for CTFApp {
                         // Deserialize the message
                         let message: NetworkMessage = serde_json::from_str(&ws_text).unwrap();
 
-                        // Debug the state of the app
-                        info!("App state: {:?}", self.client_state);
-                        // info!("Connection state: {:?}", self.connection_state);
-                        info!("Auth state: {:?}", self.authentication_state);
-                        info!("Message: {:?}", message);
+                        // // Debug the state of the app
+                        // info!("App state: {:?}", self.client_state);
+                        // // info!("Connection state: {:?}", self.connection_state);
+                        // info!("Auth state: {:?}", self.authentication_state);
+                        // info!("Message: {:?}", message);
 
                         match message {
                             // All messages about the CTF game
@@ -319,6 +329,9 @@ impl eframe::App for CTFApp {
 
                                             // Flag to save the app state
                                             save_flag = true;
+
+                                            // Change the current window
+                                            self.current_window = CTFUIWindow::Team;
                                         }
                                         ClientUpdate::IncorrectToken => {
                                             self.toasts
@@ -342,6 +355,7 @@ impl eframe::App for CTFApp {
                                     | CTFMessage::JoinTeam(_)
                                     | CTFMessage::CreateTeam(_)
                                     | CTFMessage::Login(_)
+                                    | CTFMessage::Logout
                                     | CTFMessage::Connect
                                     | CTFMessage::LeaveTeam => unreachable!(),
                                 }
@@ -364,7 +378,7 @@ impl eframe::App for CTFApp {
             }
         }
 
-        ctf_ui(self, ctx);
+        ctf_ui(self, ctx, frame);
     }
 
     /// Called by the frame work to save state before shutdown.

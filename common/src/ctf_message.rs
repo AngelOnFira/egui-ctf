@@ -12,6 +12,8 @@ pub enum CTFMessage {
     Connect,
     /// Login token being submitted
     Login(String),
+    /// A client wants to be logged out
+    Logout,
     /// A subset of the information stored in the CTF state, to be passed to the client
     CTFClientStateComponent(CTFClientStateComponent),
     SubmitFlag {
