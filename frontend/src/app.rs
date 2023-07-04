@@ -15,7 +15,7 @@ use std::{
 
 use crate::panels::{
     challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,
-    login::LoginPanel, team::TeamPanel, scoreboard::ScoreboardPanel,
+    login::LoginPanel, scoreboard::ScoreboardPanel, team::TeamPanel,
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -128,6 +128,7 @@ impl ConnectionState {
                 // taking ownership of the queue
                 let messages = inner.message_queue.clone();
                 inner.message_queue.clear();
+
                 for message in messages {
                     inner
                         .ws_sender
@@ -283,6 +284,11 @@ impl CTFApp {
                             token.to_owned(),
                         )));
                 }
+                // Otherwise, send a unauthenticated connect message
+                else {
+                    self.connection_state
+                        .send_message(NetworkMessage::CTFMessage(CTFMessage::Connect));
+                }
             }
             Err(error) => {
                 panic!("Failed to connect {}", error);
@@ -414,6 +420,7 @@ impl eframe::App for CTFApp {
                                     | CTFMessage::JoinTeam(_)
                                     | CTFMessage::CreateTeam(_)
                                     | CTFMessage::Login(_)
+                                    | CTFMessage::Connect
                                     | CTFMessage::LeaveTeam => unreachable!(),
                                 }
                             }
@@ -473,6 +480,9 @@ impl eframe::App for CTFApp {
                     AuthenticationStateEnum::NotAuthenticated => {
                         // Show the login panel
                         self.login_panel.show(ctx, &mut self.connection_state);
+
+                        // Show the scoreboard
+                        self.scoreboard_panel.show(ctx, &self.client_state);
                     }
                     AuthenticationStateEnum::Authenticated => {
                         // Show the hacker list
@@ -495,9 +505,6 @@ impl eframe::App for CTFApp {
                                 &mut self.connection_state,
                             );
                         }
-
-                        // Show the scoreboard
-                        self.scoreboard_panel.show(ctx, &self.client_state);
                     }
                 }
             }

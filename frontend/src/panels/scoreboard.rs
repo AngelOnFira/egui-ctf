@@ -165,8 +165,8 @@ impl ScoreboardPanel {
                             0.0 - max_team_score as f64 / border,
                         ],
                         [
-                            time_diff + time_diff / border,
-                            max_team_score as f64 + max_team_score as f64 / border,
+                            time_diff + time_diff / (border / 2.0),
+                            max_team_score as f64 + max_team_score as f64 / (border / 2.0),
                         ],
                     ));
                 })

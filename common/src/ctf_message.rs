@@ -7,6 +7,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CTFMessage {
+    /// A client wants to connect and get information about the game, but isn't
+    /// authenticated
+    Connect,
+    /// Login token being submitted
+    Login(String),
     /// A subset of the information stored in the CTF state, to be passed to the client
     CTFClientStateComponent(CTFClientStateComponent),
     SubmitFlag {
@@ -16,8 +21,6 @@ pub enum CTFMessage {
     /// Tell a specific client that something that matters to them has happened
     /// (They submitted a flag correctly a team member went offline, etc.)
     ClientUpdate(ClientUpdate),
-    /// Login token being submitted
-    Login(String),
     /// Team token being submitted by player
     JoinTeam(String),
     /// Team name being submitted by player
