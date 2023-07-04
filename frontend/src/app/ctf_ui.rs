@@ -10,25 +10,15 @@ use crate::CTFApp;
 use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, CTFUIWindow, UiTheme};
 
 pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Frame) {
-    egui::SidePanel::left("side_panel").show(ctx, |ui| {
-        // Set the egui theme
-        catppuccin_egui::set_theme(
-            ctx,
-            match ctf_app.ui_theme {
-                UiTheme::Latte => catppuccin_egui::LATTE,
-                UiTheme::Mocha => catppuccin_egui::MOCHA,
-                UiTheme::Macchiato => catppuccin_egui::MACCHIATO,
-                UiTheme::Frappe => catppuccin_egui::FRAPPE,
-            },
-        );
+    // Check if we're connected to the server
+    if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
+        egui::SidePanel::left("side_panel").show(ctx, |ui| {
 
-        ui.heading("Windows");
+            ui.heading("Windows");
 
-        ui.vertical_centered_justified(|ui| {
-            ui.style_mut().text_styles = [(Button, FontId::new(18.0, Proportional))].into();
+            ui.vertical_centered_justified(|ui| {
+                ui.style_mut().text_styles = [(Button, FontId::new(18.0, Proportional))].into();
 
-            // Check if we're connected to the server
-            if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
                 // Scoreboard window button
                 if ui.button("Scoreboard").clicked() {
                     ctf_app.current_window = CTFUIWindow::Scoreboard;
@@ -80,67 +70,66 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                         }
                     }
                 }
-            } else {
-                // If we're not connected to the server, show a connecting
-                // notice
-                // ui.label("Connecting...");
-            }
+            });
+
+            ui.heading("Settings");
+            egui::ComboBox::from_label("Theme")
+                .selected_text(format!("{:?}", ctf_app.ui_theme))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Frappe, "Frappe");
+                    ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Macchiato, "Macchiato");
+                    ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Mocha, "Mocha");
+                    ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Latte, "Latte");
+                });
         });
 
-        ui.heading("Settings");
-        egui::ComboBox::from_label("Theme")
-            .selected_text(format!("{:?}", ctf_app.ui_theme))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Frappe, "Frappe");
-                ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Macchiato, "Macchiato");
-                ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Mocha, "Mocha");
-                ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Latte, "Latte");
-            });
-    });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // Check if we're connected to the server
+            if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
+                // Display the current window
+                match &ctf_app.current_window {
+                    CTFUIWindow::Login => {
+                        // Show the login panel
+                        ctf_app
+                            .login_panel
+                            .window(ctx, &mut ctf_app.connection_state);
+                    }
+                    CTFUIWindow::Team => {
+                        // Show the team panel
+                        ctf_app.team_panel.window(
+                            ctx,
+                            &ctf_app.client_state,
+                            &mut ctf_app.connection_state,
+                        );
 
-    egui::CentralPanel::default().show(ctx, |ui| {
-        // Check if we're connected to the server
-        if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
-            // Display the current window
-            match &ctf_app.current_window {
-                CTFUIWindow::Login => {
-                    // Show the login panel
-                    ctf_app
-                        .login_panel
-                        .window(ctx, &mut ctf_app.connection_state);
-                }
-                CTFUIWindow::Team => {
-                    // Show the team panel
-                    ctf_app.team_panel.window(
-                        ctx,
-                        &ctf_app.client_state,
-                        &mut ctf_app.connection_state,
-                    );
+                        // Show the hacker list
+                        ctf_app.hacker_list.window(ctx, &ctf_app.client_state);
+                    }
+                    CTFUIWindow::Challenge => {
+                        // Show the challenge list panel
+                        ctf_app
+                            .challenge_list_panel
+                            .show(ctx, &ctf_app.client_state);
 
-                    // Show the hacker list
-                    ctf_app.hacker_list.window(ctx, &ctf_app.client_state);
-                }
-                CTFUIWindow::Challenge => {
-                    // Show the challenge list panel
-                    ctf_app
-                        .challenge_list_panel
-                        .show(ctx, &ctf_app.client_state);
-
-                    // Show the challenge panel
-                    ctf_app.challenge_panel.window(
-                        ctx,
-                        &ctf_app.client_state,
-                        &ctf_app.challenge_list_panel.visible_challenge,
-                        &mut ctf_app.connection_state,
-                    );
-                }
-                CTFUIWindow::Scoreboard => {
-                    // Show the scoreboard
-                    ctf_app.scoreboard_panel.ui(ui, &ctf_app.client_state);
+                        // Show the challenge panel
+                        ctf_app.challenge_panel.window(
+                            ctx,
+                            &ctf_app.client_state,
+                            &ctf_app.challenge_list_panel.visible_challenge,
+                            &mut ctf_app.connection_state,
+                        );
+                    }
+                    CTFUIWindow::Scoreboard => {
+                        // Show the scoreboard
+                        ctf_app.scoreboard_panel.ui(ui, &ctf_app.client_state);
+                    }
                 }
             }
-        }
-    });
+        });
+    } else {
+        // Display the connecting screen
+        ctf_app.connecting_panel.window(ctx);
+    }
 
     // Toasts
     ctf_app.toasts.show(ctx);

@@ -18,7 +18,10 @@ use std::{
     time::Duration,
 };
 
-use self::connection_state::{ConnectionState, ConnectionStateEnum};
+use self::{
+    connection_state::{ConnectionState, ConnectionStateEnum},
+    panels::connecting::ConnectingPanel,
+};
 
 mod connection_state;
 mod ctf_ui;
@@ -43,6 +46,8 @@ pub struct CTFApp {
 
     #[serde(skip)]
     scoreboard_panel: ScoreboardPanel,
+
+    connecting_panel: ConnectingPanel,
 
     // Other visuals
     #[serde(skip)]
@@ -161,6 +166,7 @@ impl Default for CTFApp {
             challenge_list_panel: ChallengeList::default(),
             challenge_panel: ChallengePanel::default(),
             scoreboard_panel: ScoreboardPanel::default(),
+            connecting_panel: ConnectingPanel::default(),
             // Other visuals
             toasts: Toasts::default(),
             // Other state
@@ -232,6 +238,17 @@ impl eframe::App for CTFApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        // Set the egui theme
+        catppuccin_egui::set_theme(
+            ctx,
+            match self.ui_theme {
+                UiTheme::Latte => catppuccin_egui::LATTE,
+                UiTheme::Mocha => catppuccin_egui::MOCHA,
+                UiTheme::Macchiato => catppuccin_egui::MACCHIATO,
+                UiTheme::Frappe => catppuccin_egui::FRAPPE,
+            },
+        );
+
         // Start by seeing if the websocket has any new messages
         for event in self.ws_state_queue.lock().unwrap().queue.drain(..) {
             match event {

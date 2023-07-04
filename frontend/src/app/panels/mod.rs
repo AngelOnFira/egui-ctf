@@ -4,3 +4,4 @@ pub mod hacker_list;
 pub mod login;
 pub mod scoreboard;
 pub mod team;
+pub mod connecting;
