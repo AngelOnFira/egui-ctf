@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use entity::entities::{challenge, hacker, submission, team};
 use iter_tools::Itertools;
@@ -198,7 +198,7 @@ impl CTFState {
             .collect::<HashMap<TeamName, TeamId>>();
 
         // Find all the correct submissions
-        let solves = submission::Entity::find()
+        let _solves = submission::Entity::find()
             .filter(submission::Column::Correct.eq(true))
             .all(db)
             .await

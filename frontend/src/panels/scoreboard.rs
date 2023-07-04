@@ -1,19 +1,12 @@
-use core::time;
-use std::f64::consts::TAU;
-
-use common::{
-    ctf_message::{CTFMessage, TeamData},
-    NetworkMessage,
-};
 use eframe::egui;
 use egui::{
-    plot::{self, Corner, Legend, Line, MarkerShape, Plot, PlotBounds, Points},
-    remap, Vec2,
+    plot::{Corner, Legend, Line, MarkerShape, Plot, PlotBounds, Points},
+    Vec2,
 };
-use egui_extras::{Column, TableBuilder};
+
 use itertools::Itertools;
 
-use crate::app::{ClientState, ConnectionState};
+use crate::app::ClientState;
 
 pub struct ScoreboardPanel {}
 
