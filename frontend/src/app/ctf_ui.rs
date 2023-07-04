@@ -20,7 +20,7 @@ use panels::{
 
 use crate::CTFApp;
 
-use super::{panels, UiTheme, AuthenticationStateEnum, ConnectionStateEnum};
+use super::{panels, UiTheme, AuthenticationStateEnum, connection_state::ConnectionStateEnum};
 
 pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
     egui::SidePanel::left("side_panel").show(ctx, |ui| {
