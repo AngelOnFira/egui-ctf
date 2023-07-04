@@ -3,3 +3,4 @@ frontend/dist/
 file.db
 backend/ctf/
 backend/ctf
+**/Secrets.toml
