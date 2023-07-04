@@ -6,8 +6,8 @@ use common::{
 };
 use eframe::egui;
 use egui::{
-    plot::{Corner, Legend, Line, MarkerShape, Plot, Points},
-    remap,
+    plot::{self, Corner, Legend, Line, MarkerShape, Plot, PlotBounds, Points},
+    remap, Vec2,
 };
 use egui_extras::{Column, TableBuilder};
 use itertools::Itertools;
@@ -55,11 +55,19 @@ impl ScoreboardPanel {
                 .legend(Legend::default().position(Corner::RightBottom))
                 .width(400.0)
                 .height(200.0)
-                .center_y_axis(true)
+                // .center_y_axis(true)
                 .allow_drag(false)
+                .allow_zoom(false)
                 .show_x(true)
+                .set_margin_fraction(Vec2 { x: 0.1, y: 0.1 })
                 .auto_bounds_x()
                 .auto_bounds_y()
+                // .view_aspect(0.2)
+                // .include_x(0.0)
+                // .include_x(10.0)
+                // .include_y(0.0)
+                // .include_y(1000.0)
+                // .clamp_grid(true)
                 .label_formatter(|name, value| {
                     let mut format_string = String::new();
                     // If the name is has something, add it to the string first,
@@ -83,6 +91,7 @@ impl ScoreboardPanel {
                     format_string
                 })
                 .show(ui, |plot_ui| {
+                    let max_team_score = 0;
                     for (team_name, solves) in &global_state.scoreboard.teams {
                         // Iterate over this team's scores. Make sure to sort them by
                         // time. The time is stored in milliseconds since the epoch, so
@@ -90,33 +99,46 @@ impl ScoreboardPanel {
 
                         // A team's line of score
                         plot_ui.line(Line::new(
-                            solves.iter().sorted_by(|a, b| a.time.cmp(&b.time)).fold(
-                                vec![[0.0, 0.0]],
-                                |mut acc, s| {
-                                    acc.push([
+                            solves
+                                .iter()
+                                .sorted_by(|a, b| a.time.cmp(&b.time))
+                                .fold((0, vec![[0.0, 0.0]]), |mut acc, s| {
+                                    acc.0 += s.points;
+                                    acc.1.push([
                                         (s.time - lowest_time) as f64 / 1000.0 / 60.0,
-                                        s.points as f64,
+                                        acc.0 as f64,
                                     ]);
                                     acc
-                                },
-                            ),
+                                })
+                                .1,
                         ));
 
                         // A team's points for each score
                         solves
                             .iter()
                             .sorted_by(|a, b| a.time.cmp(&b.time))
-                            .map(|s| {
-                                Points::new(vec![[
+                            .fold((0, vec![[0.0, 0.0]]), |mut acc, s| {
+                                acc.0 += s.points;
+                                acc.1.push([
                                     (s.time - lowest_time) as f64 / 1000.0 / 60.0,
-                                    s.points as f64,
-                                ]])
+                                    acc.0 as f64,
+                                ]);
+                                acc
+                            })
+                            .1
+                            .iter()
+                            .map(|s| {
+                                Points::new(vec![*s])
                                 .name(team_name)
                                 .filled(true)
                                 .radius(3.0)
                                 .shape(MarkerShape::Circle)
                             })
                             .for_each(|p| plot_ui.points(p));
+
+                        plot_ui.set_plot_bounds(PlotBounds::from_min_max([0.0, 0.0], [1.0, 1000.0]))
+
+                        // plot_ui.
                     }
                 })
                 .response;
