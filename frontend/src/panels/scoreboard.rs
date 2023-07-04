@@ -1,3 +1,4 @@
+use core::time;
 use std::f64::consts::TAU;
 
 use common::{
@@ -51,6 +52,25 @@ impl ScoreboardPanel {
                 .min()
                 .unwrap_or(0);
 
+            // The latest time a solve was submitted
+            let highest_time = global_state
+                .scoreboard
+                .teams
+                .iter()
+                .map(|(_, solves)| solves.iter().map(|s| s.time).max())
+                .flatten()
+                .max()
+                .unwrap_or(0);
+
+            // The team with the max score
+            let max_team_score = global_state
+                .scoreboard
+                .teams
+                .iter()
+                .map(|(_, solves)| solves.iter().map(|s| s.points).sum::<u32>())
+                .max()
+                .unwrap_or(0);
+
             Plot::new("custom_axes")
                 .legend(Legend::default().position(Corner::RightBottom))
                 .width(400.0)
@@ -91,7 +111,6 @@ impl ScoreboardPanel {
                     format_string
                 })
                 .show(ui, |plot_ui| {
-                    let max_team_score = 0;
                     for (team_name, solves) in &global_state.scoreboard.teams {
                         // Iterate over this team's scores. Make sure to sort them by
                         // time. The time is stored in milliseconds since the epoch, so
@@ -114,32 +133,42 @@ impl ScoreboardPanel {
                         ));
 
                         // A team's points for each score
-                        solves
-                            .iter()
-                            .sorted_by(|a, b| a.time.cmp(&b.time))
-                            .fold((0, vec![[0.0, 0.0]]), |mut acc, s| {
-                                acc.0 += s.points;
-                                acc.1.push([
-                                    (s.time - lowest_time) as f64 / 1000.0 / 60.0,
-                                    acc.0 as f64,
-                                ]);
-                                acc
-                            })
-                            .1
-                            .iter()
-                            .map(|s| {
-                                Points::new(vec![*s])
-                                .name(team_name)
-                                .filled(true)
-                                .radius(3.0)
-                                .shape(MarkerShape::Circle)
-                            })
-                            .for_each(|p| plot_ui.points(p));
-
-                        plot_ui.set_plot_bounds(PlotBounds::from_min_max([0.0, 0.0], [1.0, 1000.0]))
-
-                        // plot_ui.
+                        plot_ui.points(
+                            Points::new(
+                                solves
+                                    .iter()
+                                    .sorted_by(|a, b| a.time.cmp(&b.time))
+                                    .fold((0, vec![[0.0, 0.0]]), |mut acc, s| {
+                                        acc.0 += s.points;
+                                        acc.1.push([
+                                            (s.time - lowest_time) as f64 / 1000.0 / 60.0,
+                                            acc.0 as f64,
+                                        ]);
+                                        acc
+                                    })
+                                    .1,
+                            )
+                            .name(team_name)
+                            .filled(true)
+                            .radius(3.0)
+                            .shape(MarkerShape::Circle),
+                        );
                     }
+
+                    let time_diff = (highest_time - lowest_time) as f64 / 1000.0 / 60.0;
+
+                    let border = 10.0;
+
+                    plot_ui.set_plot_bounds(PlotBounds::from_min_max(
+                        [
+                            0.0 - time_diff / border,
+                            0.0 - max_team_score as f64 / border,
+                        ],
+                        [
+                            time_diff + time_diff / border,
+                            max_team_score as f64 + max_team_score as f64 / border,
+                        ],
+                    ));
                 })
                 .response;
         }
