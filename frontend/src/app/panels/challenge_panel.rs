@@ -4,6 +4,7 @@ use common::{
 };
 use eframe::egui;
 
+use egui::Align2;
 use serde::{Deserialize, Serialize};
 
 use crate::app::{ClientState, ConnectionState};
@@ -26,15 +27,16 @@ impl ChallengePanel {
         connection_state: &mut ConnectionState,
     ) {
         egui::Window::new(self.name())
-            // .open(open)
-            .resizable(true)
-            .default_width(280.0)
+            .resizable(false)
+            .collapsible(false)
+            .anchor(Align2::RIGHT_CENTER, [0.0, 0.0])
+            .auto_sized()
             .show(ctx, |ui| {
                 self.ui(ui, ctf_state, visible_challenge, connection_state);
             });
     }
 
-    fn ui(
+    pub fn ui(
         &mut self,
         ui: &mut egui::Ui,
         ctf_state: &ClientState,

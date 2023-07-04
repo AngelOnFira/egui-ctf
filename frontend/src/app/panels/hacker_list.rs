@@ -32,8 +32,10 @@ impl HackerList {
             });
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
         ui.add_enabled_ui(self.enabled, |ui| {
+            ui.heading("Online hackers");
+
             ui.set_visible(self.visible);
 
             let table = TableBuilder::new(ui)
@@ -50,30 +52,11 @@ impl HackerList {
             // false.
             match &ctf_state.ctf_state.global_data {
                 Some(global_data) => {
-                    // self.enabled = true;
-                    table
-                        .header(20.0, |mut header| {
-                            header.col(|ui| {
-                                ui.strong("Team");
-                            });
-                            header.col(|ui| {
-                                ui.strong("Player");
-                            });
-                        })
-                        .body(|mut body| {
-                            for hacker_team in &global_data.hacker_teams {
-                                for hacker in &hacker_team.hackers {
-                                    body.row(20.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(&hacker_team.name);
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(&hacker.name);
-                                        });
-                                    });
-                                }
-                            }
-                        });
+                    for hacker_team in &global_data.hacker_teams {
+                        for hacker in &hacker_team.hackers {
+                            ui.label(format!("{} [{}]", &hacker.name, hacker_team.name));
+                        }
+                    }
                 }
                 None => {
                     self.enabled = false;

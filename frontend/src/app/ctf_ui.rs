@@ -12,8 +12,8 @@ use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, CTFU
 pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Frame) {
     // Check if we're connected to the server
     if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
-        egui::SidePanel::left("side_panel").show(ctx, |ui| {
-
+        // The left panel is the windows select panel and settings
+        egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.heading("Windows");
 
             ui.vertical_centered_justified(|ui| {
@@ -22,6 +22,11 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                 // Scoreboard window button
                 if ui.button("Scoreboard").clicked() {
                     ctf_app.current_window = CTFUIWindow::Scoreboard;
+
+                    // Save to storage
+                    if let Some(storage) = frame.storage_mut() {
+                        ctf_app.save(storage);
+                    }
                 }
                 // Check if we're authenticated
                 match &ctf_app.authentication_state.state {
@@ -29,12 +34,22 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                         // Login window button
                         if ui.button("Login").clicked() {
                             ctf_app.current_window = CTFUIWindow::Login;
+
+                            // Save to storage
+                            if let Some(storage) = frame.storage_mut() {
+                                ctf_app.save(storage);
+                            }
                         }
                     }
                     AuthenticationStateEnum::Authenticated => {
                         // Team window button
                         if ui.button("Team").clicked() {
                             ctf_app.current_window = CTFUIWindow::Team;
+
+                            // Save to storage
+                            if let Some(storage) = frame.storage_mut() {
+                                ctf_app.save(storage);
+                            }
                         }
 
                         // If we're on a team, show the challenge info
@@ -42,6 +57,11 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                             // Challenges window button
                             if ui.button("Challenges").clicked() {
                                 ctf_app.current_window = CTFUIWindow::Challenge;
+
+                                // Save to storage
+                                if let Some(storage) = frame.storage_mut() {
+                                    ctf_app.save(storage);
+                                }
                             }
                         }
 
@@ -56,6 +76,11 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
 
                             // Change the screen to the scoreboard
                             ctf_app.current_window = CTFUIWindow::Scoreboard;
+
+                            // Save to storage
+                            if let Some(storage) = frame.storage_mut() {
+                                ctf_app.save(storage);
+                            }
 
                             // Add a toast to say we logged out
                             ctf_app
@@ -81,8 +106,15 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Mocha, "Mocha");
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Latte, "Latte");
                 });
+
+            // If we're authenticated, show the hacker list
+            if let AuthenticationStateEnum::Authenticated = &ctf_app.authentication_state.state {
+                // Show the hacker list
+                ctf_app.hacker_list.ui(ui, &ctf_app.client_state);
+            }
         });
 
+        // The central panel will have most of the content that will be used
         egui::CentralPanel::default().show(ctx, |ui| {
             // Check if we're connected to the server
             if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
@@ -101,23 +133,22 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                             &ctf_app.client_state,
                             &mut ctf_app.connection_state,
                         );
-
-                        // Show the hacker list
-                        ctf_app.hacker_list.window(ctx, &ctf_app.client_state);
                     }
                     CTFUIWindow::Challenge => {
-                        // Show the challenge list panel
-                        ctf_app
-                            .challenge_list_panel
-                            .show(ctx, &ctf_app.client_state);
+                        ui.columns(2, |columns| {
+                            // Show the challenge list panel
+                            ctf_app
+                                .challenge_list_panel
+                                .ui(&mut columns[0], &ctf_app.client_state);
 
-                        // Show the challenge panel
-                        ctf_app.challenge_panel.window(
-                            ctx,
-                            &ctf_app.client_state,
-                            &ctf_app.challenge_list_panel.visible_challenge,
-                            &mut ctf_app.connection_state,
-                        );
+                            // Show the challenge panel
+                            ctf_app.challenge_panel.ui(
+                                &mut columns[1],
+                                &ctf_app.client_state,
+                                &ctf_app.challenge_list_panel.visible_challenge,
+                                &mut ctf_app.connection_state,
+                            );
+                        });
                     }
                     CTFUIWindow::Scoreboard => {
                         // Show the scoreboard

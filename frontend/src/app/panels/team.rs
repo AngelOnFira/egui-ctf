@@ -3,6 +3,7 @@ use common::{
     NetworkMessage,
 };
 use eframe::egui;
+use egui::Align2;
 use egui_extras::{Column, TableBuilder};
 
 use crate::app::{ClientState, ConnectionState};
@@ -38,7 +39,9 @@ impl TeamPanel {
     ) {
         egui::Window::new(self.name())
             .resizable(true)
-            .default_width(280.0)
+            .movable(false)
+            .collapsible(false)
+            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
                 self.ui(ui, ctf_state, connection_state);
             });

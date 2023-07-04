@@ -1,8 +1,5 @@
-use common::{ctf_message::CTFMessage, NetworkMessage};
 use egui::{emath, epaint, pos2, vec2, Align2, Color32, Frame, Pos2, Rect, Stroke};
 use wasm_timer::SystemTime;
-
-use crate::app::ConnectionState;
 
 /// Shows off one example of each major type of widget.
 #[derive(serde::Deserialize, serde::Serialize, Default)]

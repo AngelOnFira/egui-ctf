@@ -75,7 +75,6 @@ pub struct CTFApp {
 
     ui_theme: UiTheme,
 
-    #[serde(skip)]
     current_window: CTFUIWindow,
 }
 
@@ -206,6 +205,7 @@ impl CTFApp {
             ws_state_queue_clone.lock().unwrap().queue.push(event);
             ctx.request_repaint(); // wake up UI thread on new message}
         };
+
         match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
                 self.connection_state
@@ -346,9 +346,6 @@ impl eframe::App for CTFApp {
 
                                             // Flag to save the app state
                                             save_flag = true;
-
-                                            // Change the current window
-                                            self.current_window = CTFUIWindow::Team;
                                         }
                                         ClientUpdate::IncorrectToken => {
                                             self.toasts

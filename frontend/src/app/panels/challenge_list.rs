@@ -1,6 +1,6 @@
 use common::ctf_message::{CTFChallenge, GameData};
 use eframe::egui;
-use egui::{epaint::ahash::HashMap, ScrollArea};
+use egui::{epaint::ahash::HashMap, Align2, ScrollArea};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -18,18 +18,10 @@ impl ChallengeList {
         "Challenge"
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, ctf_state: &ClientState) {
-        egui::Window::new(self.name())
-            // .open(open)
-            .resizable(true)
-            .default_width(280.0)
-            .show(ctx, |ui| {
-                self.ui(ui, ctf_state);
-            });
-    }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
-        ScrollArea::vertical().max_height(400.0).show(ui, |ui| {
+
+    pub fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
+        ScrollArea::vertical().show(ui, |ui| {
             // If we're logged in, show all the challenges
             if let GameData::LoggedIn { challenges } = &ctf_state.ctf_state.game_data {
                 // Sort the challenges into categories
