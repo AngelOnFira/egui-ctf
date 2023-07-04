@@ -5,6 +5,8 @@ use iter_tools::Itertools;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
+pub type DiscordClientId = i64;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CTFMessage {
     /// A client wants to connect and get information about the game, but isn't
@@ -62,7 +64,7 @@ impl CTFState {
     // }
 
     /// Build a hackers's team data
-    pub async fn get_hacker_team_data(client_id: &String, db: &DatabaseConnection) -> TeamData {
+    pub async fn get_hacker_team_data(client_id: DiscordClientId, db: &DatabaseConnection) -> TeamData {
         // Get the hacker
         let hacker = hacker::Entity::find()
             .filter(hacker::Column::DiscordId.eq(client_id))
@@ -104,7 +106,7 @@ impl CTFState {
     }
 
     // Build a hacker's client data
-    pub async fn get_hacker_client_data(client_id: &String, db: &DatabaseConnection) -> ClientData {
+    pub async fn get_hacker_client_data(client_id: DiscordClientId, db: &DatabaseConnection) -> ClientData {
         // Get the hacker
         let hacker = hacker::Entity::find()
             .filter(hacker::Column::DiscordId.eq(client_id))

@@ -27,12 +27,12 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Hacker::DiscordId)
-                            .string()
+                            .big_integer()
                             .not_null()
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Hacker::Username).string().not_null())
-                    .col(ColumnDef::new(Hacker::FkTeamId).big_integer().null())
+                    .col(ColumnDef::new(Hacker::FkTeamId).integer().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("hacker_team_fk")

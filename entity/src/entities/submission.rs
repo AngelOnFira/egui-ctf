@@ -11,9 +11,9 @@ pub struct Model {
     pub flag: String,
     pub time: String,
     pub correct: bool,
-    pub fk_hacker_id: Option<String>,
+    pub fk_hacker_id: Option<i64>,
     pub fk_team_id: Option<i32>,
-    pub fk_challenge_id: Option<i64>,
+    pub fk_challenge_id: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

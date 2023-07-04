@@ -51,7 +51,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Submission::Flag).string().not_null())
                     .col(ColumnDef::new(Submission::Time).string().not_null())
                     .col(ColumnDef::new(Submission::Correct).boolean().not_null())
-                    .col(ColumnDef::new(Submission::FkHackerId).string().null())
+                    .col(ColumnDef::new(Submission::FkHackerId).big_integer().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("submission_hacker_fk")
@@ -67,7 +67,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(Submission::FkChallengeId)
-                            .big_integer()
+                            .integer()
                             .null(),
                     )
                     .foreign_key(

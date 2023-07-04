@@ -7,7 +7,7 @@ use actix::{
 };
 use common::{
     ctf_message::{
-        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, GameData, TeamData,
+        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, GameData, TeamData, DiscordClientId,
     },
     ClientId, NetworkMessage,
 };
@@ -45,10 +45,12 @@ impl Session {
     }
 }
 
+
+
 #[derive(Debug, Clone)]
 enum Auth {
     Unauthenticated,
-    Hacker { discord_id: String },
+    Hacker { discord_id: DiscordClientId },
 }
 
 impl CTFServer {
@@ -301,7 +303,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                                         CTFMessage::CTFClientStateComponent(
                                                             CTFClientStateComponent::TeamData(
                                                                 CTFState::get_hacker_team_data(
-                                                                    &hacker.discord_id,
+                                                                    hacker.discord_id,
                                                                     &db_clone,
                                                                 )
                                                                 .await,
@@ -320,7 +322,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                                         CTFMessage::CTFClientStateComponent(
                                                             CTFClientStateComponent::ClientData(
                                                                 CTFState::get_hacker_client_data(
-                                                                    &hacker.discord_id,
+                                                                    hacker.discord_id,
                                                                     &db_clone,
                                                                 )
                                                                 .await,
@@ -599,7 +601,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                     // Get the hacker associated with this
                                     // request
                                     let hacker: hacker::Model = hacker::Entity::find()
-                                        .filter(hacker::Column::DiscordId.eq(&discord_id))
+                                        .filter(hacker::Column::DiscordId.eq(discord_id))
                                         .one(&db_clone)
                                         .await
                                         .expect("Failed to get hacker")
@@ -638,7 +640,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                             CTFMessage::CTFClientStateComponent(
                                                 CTFClientStateComponent::ClientData(
                                                     CTFState::get_hacker_client_data(
-                                                        &hacker_id, &db_clone,
+                                                        hacker_id, &db_clone,
                                                     )
                                                     .await,
                                                 ),
@@ -653,7 +655,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                             CTFMessage::CTFClientStateComponent(
                                                 CTFClientStateComponent::TeamData(
                                                     CTFState::get_hacker_team_data(
-                                                        &hacker_id, &db_clone,
+                                                        hacker_id, &db_clone,
                                                     )
                                                     .await,
                                                 ),
@@ -732,7 +734,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
                             // Set this team as the hacker's team
                             let mut hacker: hacker::ActiveModel =
-                                hacker::Entity::find_by_id(&discord_id)
+                                hacker::Entity::find_by_id(discord_id)
                                     .one(&db_clone)
                                     .await
                                     .expect("Failed to get hacker")
@@ -764,7 +766,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 message: NetworkMessage::CTFMessage(
                                     CTFMessage::CTFClientStateComponent(
                                         CTFClientStateComponent::TeamData(
-                                            CTFState::get_hacker_team_data(&discord_id, &db_clone)
+                                            CTFState::get_hacker_team_data(discord_id, &db_clone)
                                                 .await,
                                         ),
                                     ),
@@ -775,7 +777,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             // check that this hacker is on a team
 
                             let mut hacker: hacker::ActiveModel =
-                                hacker::Entity::find_by_id(&discord_id)
+                                hacker::Entity::find_by_id(discord_id)
                                     .one(&db_clone)
                                     .await
                                     .expect("Failed to get hacker")
@@ -807,7 +809,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 message: NetworkMessage::CTFMessage(
                                     CTFMessage::CTFClientStateComponent(
                                         CTFClientStateComponent::TeamData(
-                                            CTFState::get_hacker_team_data(&discord_id, &db_clone)
+                                            CTFState::get_hacker_team_data(discord_id, &db_clone)
                                                 .await,
                                         ),
                                     ),

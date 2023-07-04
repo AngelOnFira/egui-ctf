@@ -32,7 +32,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Token::Expiry).date_time().not_null())
-                    .col(ColumnDef::new(Token::FkHackerId).string().null())
+                    .col(ColumnDef::new(Token::FkHackerId).big_integer().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("submission_hacker_fk")

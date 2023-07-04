@@ -23,7 +23,7 @@ pub async fn run(
         Some(hacker) => hacker,
         None => {
             let hacker = hacker::ActiveModel {
-                discord_id: Set(discord_user_id.0.to_string()),
+                discord_id: Set(discord_user_id.0 as i64),
                 username: Set(discord_username.to_string()),
                 ..Default::default()
             };
@@ -36,7 +36,8 @@ pub async fn run(
     let token: token::Model = token::ActiveModel {
         fk_hacker_id: Set(Some(hacker.discord_id)),
         token: Set(Uuid::new_v4().as_simple().to_string()),
-        expiry: Set("test".to_string()),
+        // 20 minutes from now
+        expiry: Set((chrono::Utc::now() + chrono::Duration::minutes(20)).naive_local()),
         ..Default::default()
     }
     .insert(&db)

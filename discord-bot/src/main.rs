@@ -9,7 +9,6 @@ use serenity::model::application::interaction::{Interaction, InteractionResponse
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
 use serenity::prelude::*;
-use shuttle_secrets::SecretStore;
 
 struct Handler {
     db: DatabaseConnection,

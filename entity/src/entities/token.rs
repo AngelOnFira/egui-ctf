@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub token: String,
     pub expiry: DateTime,
-    pub fk_hacker_id: Option<String>,
+    pub fk_hacker_id: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
