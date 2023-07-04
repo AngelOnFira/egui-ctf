@@ -2,4 +2,3 @@
 
 mod app;
 pub use app::CTFApp;
-pub mod panels;

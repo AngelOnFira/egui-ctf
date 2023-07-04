@@ -1,3 +1,4 @@
+use crate::app::ctf_ui::ctf_ui;
 use common::{
     ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate, TeamData},
     NetworkMessage,
@@ -6,6 +7,10 @@ use core::fmt::Display;
 use egui_notify::Toasts;
 use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
 use log::info;
+use panels::{
+    challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,
+    login::LoginPanel, scoreboard::ScoreboardPanel, team::TeamPanel,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
@@ -13,10 +18,8 @@ use std::{
     time::Duration,
 };
 
-use crate::panels::{
-    challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,
-    login::LoginPanel, scoreboard::ScoreboardPanel, team::TeamPanel,
-};
+mod ctf_ui;
+mod panels;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Deserialize, Serialize)]
@@ -63,6 +66,17 @@ pub struct CTFApp {
     client_state: ClientState,
 
     ui_theme: UiTheme,
+
+    #[serde(skip)]
+    current_window: CTFUiWindows,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+pub enum CTFUiWindows {
+    Login,
+    Team,
+    Challenge,
+    Scoreboard,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -253,6 +267,7 @@ impl Default for CTFApp {
                 ctf_state: CTFClientState::default(),
             },
             ui_theme: UiTheme::Frappe,
+            current_window: CTFUiWindows::Login,
         }
     }
 }
@@ -453,105 +468,7 @@ impl eframe::App for CTFApp {
             }
         }
 
-        egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            // Set the egui theme
-            catppuccin_egui::set_theme(
-                ctx,
-                match self.ui_theme {
-                    UiTheme::Latte => catppuccin_egui::LATTE,
-                    UiTheme::Mocha => catppuccin_egui::MOCHA,
-                    UiTheme::Macchiato => catppuccin_egui::MACCHIATO,
-                    UiTheme::Frappe => catppuccin_egui::FRAPPE,
-                },
-            );
-
-            ui.heading("Side Panel");
-            ui.heading("Settings");
-            egui::ComboBox::from_label("Theme")
-                .selected_text(format!("{:?}", self.ui_theme))
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.ui_theme, UiTheme::Frappe, "Frappe");
-                    ui.selectable_value(&mut self.ui_theme, UiTheme::Macchiato, "Macchiato");
-                    ui.selectable_value(&mut self.ui_theme, UiTheme::Mocha, "Mocha");
-                    ui.selectable_value(&mut self.ui_theme, UiTheme::Latte, "Latte");
-                });
-
-            // TODO: put stuff here to switch windows?
-
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("powered by ");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                    ui.label(" and ");
-                    ui.hyperlink_to(
-                        "eframe",
-                        "https://github.com/emilk/egui/tree/master/crates/eframe",
-                    );
-                    ui.label(".");
-                });
-            });
-        });
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-
-            ui.heading("eframe template");
-            ui.hyperlink("https://github.com/emilk/eframe_template");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
-            egui::warn_if_debug_build(ui);
-
-            // Check if we're connected to the server
-            if let ConnectionStateEnum::Opened = &self.connection_state.get_state() {
-                // Check if we're authenticated
-                match &self.authentication_state.state {
-                    AuthenticationStateEnum::NotAuthenticated => {
-                        // Show the login panel
-                        self.login_panel.show(ctx, &mut self.connection_state);
-
-                        // Show the scoreboard
-                        self.scoreboard_panel.show(ctx, &self.client_state);
-                    }
-                    AuthenticationStateEnum::Authenticated => {
-                        // Show the hacker list
-                        self.hacker_list.show(ctx, &self.client_state);
-
-                        // Show the team panel
-                        self.team_panel
-                            .show(ctx, &self.client_state, &mut self.connection_state);
-
-                        // If we're on a team, show the challenge info
-                        if let TeamData::OnTeam(..) = &self.client_state.ctf_state.team_data {
-                            // Show the challenge list panel
-                            self.challenge_list_panel.show(ctx, &self.client_state);
-
-                            // Show the challenge panel
-                            self.challenge_panel.show(
-                                ctx,
-                                &self.client_state,
-                                &self.challenge_list_panel.visible_challenge,
-                                &mut self.connection_state,
-                            );
-                        }
-                    }
-                }
-            }
-        });
-
-        if false {
-            egui::Window::new("Window").show(ctx, |ui| {
-                ui.label("Windows can be moved by dragging them.");
-                ui.label("They are automatically sized based on contents.");
-                ui.label("You can turn on resizing and scrolling if you like.");
-                ui.label("You would normally choose either panels OR windows.");
-            });
-        }
-
-        // Toasts
-        self.toasts.show(ctx);
+        ctf_ui(self, ctx);
     }
 
     /// Called by the frame work to save state before shutdown.
