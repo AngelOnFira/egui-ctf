@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub token: String,
-    pub expiry: String,
+    pub expiry: DateTime,
     pub fk_hacker_id: Option<String>,
 }
 

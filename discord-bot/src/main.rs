@@ -74,7 +74,9 @@ async fn main() {
     // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-    let db = Database::connect("sqlite://../file.db").await.unwrap();
+    let db = Database::connect("postgres://postgres:postgres@postgres:5432/postgres")
+        .await
+        .unwrap();
 
     // Build our client.
     let mut client = Client::builder(token, GatewayIntents::empty())

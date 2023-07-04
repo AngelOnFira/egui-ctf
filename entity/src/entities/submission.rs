@@ -13,7 +13,7 @@ pub struct Model {
     pub correct: bool,
     pub fk_hacker_id: Option<String>,
     pub fk_team_id: Option<i32>,
-    pub fk_challenge_id: Option<i32>,
+    pub fk_challenge_id: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

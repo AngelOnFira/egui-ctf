@@ -1,16 +1,15 @@
 #!/bin/bash
 
 # Reset the db
-rm -rf file.db
-sqlite3 file.db "VACUUM;"
+
 
 echo "Migrating"
 
-sea-orm-cli migrate -u sqlite://file.db
+sea-orm-cli migrate fresh -u postgres://postgres:postgres@localhost:5432/postgres
 
 echo "Building entity"
 
-rm -rf entity/src/entities/
 sea-orm-cli generate entity \
     -o entity/src/entities \
-    --with-serde both
+    --with-serde both \
+    -u postgres://postgres:postgres@localhost:5432/postgres
