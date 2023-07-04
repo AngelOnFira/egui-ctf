@@ -38,7 +38,7 @@ impl HackerList {
 
             ui.set_visible(self.visible);
 
-            let table = TableBuilder::new(ui)
+            let _table = TableBuilder::new(ui)
                 // .striped(self.striped)
                 // .resizable(self.resizable)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))

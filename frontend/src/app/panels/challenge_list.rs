@@ -1,6 +1,6 @@
 use common::ctf_message::{CTFChallenge, GameData};
 use eframe::egui;
-use egui::{epaint::ahash::HashMap, Align2, ScrollArea};
+use egui::{epaint::ahash::HashMap, ScrollArea};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -17,8 +17,6 @@ impl ChallengeList {
     fn name(&self) -> &'static str {
         "Challenge"
     }
-
-
 
     pub fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
         ScrollArea::vertical().show(ui, |ui| {
