@@ -41,7 +41,7 @@ jobs:
         # will obviously return error 404 not found.
         run: |
           cd frontend
-          ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
+          ../trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
