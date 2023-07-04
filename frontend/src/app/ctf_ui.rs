@@ -1,26 +1,8 @@
-use common::{
-    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate, TeamData},
-    NetworkMessage,
-};
-use core::fmt::Display;
-use egui_notify::Toasts;
-use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
-use log::info;
-use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Debug,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
-
-use panels::{
-    challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,
-    login::LoginPanel, scoreboard::ScoreboardPanel, team::TeamPanel,
-};
+use common::ctf_message::TeamData;
 
 use crate::CTFApp;
 
-use super::{panels, UiTheme, AuthenticationStateEnum, connection_state::ConnectionStateEnum};
+use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, UiTheme};
 
 pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
     egui::SidePanel::left("side_panel").show(ctx, |ui| {

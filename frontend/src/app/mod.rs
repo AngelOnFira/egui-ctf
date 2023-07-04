@@ -1,11 +1,11 @@
 use crate::app::ctf_ui::ctf_ui;
 use common::{
-    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate, TeamData},
+    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate},
     NetworkMessage,
 };
 use core::fmt::Display;
 use egui_notify::Toasts;
-use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
+use ewebsock::{WsEvent, WsMessage};
 use log::info;
 use panels::{
     challenge_list::ChallengeList, challenge_panel::ChallengePanel, hacker_list::HackerList,

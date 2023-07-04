@@ -1,17 +1,10 @@
-use crate::app::ctf_ui::ctf_ui;
-use common::{
-    ctf_message::{CTFClientState, CTFClientStateComponent, CTFMessage, ClientUpdate, TeamData},
-    NetworkMessage,
-};
-use core::fmt::Display;
-use egui_notify::Toasts;
-use ewebsock::{WsEvent, WsMessage, WsReceiver, WsSender};
-use log::info;
-use serde::{Deserialize, Serialize};
+use common::NetworkMessage;
+
+use ewebsock::{WsMessage, WsReceiver, WsSender};
+
 use std::{
     fmt::Debug,
     sync::{Arc, Mutex},
-    time::Duration,
 };
 
 #[derive(Clone)]
