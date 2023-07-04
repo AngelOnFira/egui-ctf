@@ -16,16 +16,7 @@ impl ScoreboardPanel {
         "Scoreboard"
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, ctf_state: &ClientState) {
-        egui::Window::new(self.name())
-            .resizable(true)
-            .default_width(280.0)
-            .show(ctx, |ui| {
-                self.ui(ui, ctf_state);
-            });
-    }
-
-    fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, ctf_state: &ClientState) {
         if let Some(global_state) = &ctf_state.ctf_state.global_data {
             // Store the lowest time solve. The CTF will "Start 20 minutes
             // before that" for now. Later, we can add a "Start at" field to the
@@ -59,11 +50,14 @@ impl ScoreboardPanel {
 
             Plot::new("custom_axes")
                 .legend(Legend::default().position(Corner::RightBottom))
-                .width(400.0)
-                .height(200.0)
+                // .width(400.0)
+                // .height(200.0)
                 // .center_y_axis(true)
                 .allow_drag(false)
                 .allow_zoom(false)
+                .allow_scroll(false)
+                .allow_boxed_zoom(false)
+                .allow_double_click_reset(false)
                 .show_x(true)
                 .set_margin_fraction(Vec2 { x: 0.1, y: 0.1 })
                 .auto_bounds_x()
@@ -148,8 +142,8 @@ impl ScoreboardPanel {
                             0.0 - max_team_score as f64 / border,
                         ],
                         [
-                            time_diff + time_diff / (border / 2.0),
-                            max_team_score as f64 + max_team_score as f64 / (border / 2.0),
+                            time_diff + time_diff / border,
+                            max_team_score as f64 + max_team_score as f64 / border,
                         ],
                     ));
                 });

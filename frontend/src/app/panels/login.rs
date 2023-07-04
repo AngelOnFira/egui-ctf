@@ -1,4 +1,5 @@
 use common::{ctf_message::CTFMessage, NetworkMessage};
+use egui::Align2;
 
 use crate::app::ConnectionState;
 
@@ -26,10 +27,12 @@ impl LoginPanel {
         "🔑 Login"
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, connection_state: &mut ConnectionState) {
+    pub fn window(&mut self, ctx: &egui::Context, connection_state: &mut ConnectionState) {
         egui::Window::new(self.name())
-            .resizable(true)
-            .default_width(280.0)
+            .resizable(false)
+            .movable(false)
+            .collapsible(false)
+            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
                 self.ui(ui, connection_state);
             });

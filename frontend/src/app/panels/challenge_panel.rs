@@ -18,7 +18,7 @@ impl ChallengePanel {
         "Challenges"
     }
 
-    pub fn show(
+    pub fn window(
         &mut self,
         ctx: &egui::Context,
         ctf_state: &ClientState,

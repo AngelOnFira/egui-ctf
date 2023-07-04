@@ -22,7 +22,7 @@ impl HackerList {
         "Hacker list"
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, ctf_state: &ClientState) {
+    pub fn window(&mut self, ctx: &egui::Context, ctf_state: &ClientState) {
         egui::Window::new(self.name())
             // .open(open)
             .resizable(true)

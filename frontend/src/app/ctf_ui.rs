@@ -1,8 +1,11 @@
 use common::ctf_message::TeamData;
+use egui::FontFamily::Proportional;
+use egui::FontId;
+use egui::TextStyle::*;
 
 use crate::CTFApp;
 
-use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, UiTheme};
+use super::{connection_state::ConnectionStateEnum, AuthenticationStateEnum, CTFUiWindow, UiTheme};
 
 pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
     egui::SidePanel::left("side_panel").show(ctx, |ui| {
@@ -17,7 +20,51 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
             },
         );
 
-        ui.heading("Side Panel");
+        ui.heading("Windows");
+
+        // let style_clone = (*ctx.style()).clone();
+        // ctx.style().text_styles = [(Button, FontId::new(24.0, Proportional))].into();
+        // ui.style_mut().text_styles = ctx.style().text_styles;
+
+        ui.vertical_centered_justified(|ui| {
+            ui.style_mut().text_styles = [(Button, FontId::new(20.0, Proportional))].into();
+
+            // Scoreboard window button
+            if ui.button("Scoreboard").clicked() {
+                ctf_app.current_window = CTFUiWindow::Scoreboard;
+            }
+
+            // Check if we're connected to the server
+            if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
+                // Check if we're authenticated
+                match &ctf_app.authentication_state.state {
+                    AuthenticationStateEnum::NotAuthenticated => {
+                        // Login window button
+                        if ui.button("Login").clicked() {
+                            ctf_app.current_window = CTFUiWindow::Login;
+                        }
+                    }
+                    AuthenticationStateEnum::Authenticated => {
+                        // Team window button
+                        if ui.button("Team").clicked() {
+                            ctf_app.current_window = CTFUiWindow::Team;
+                        }
+
+                        // If we're on a team, show the challenge info
+                        if let TeamData::OnTeam(..) = &ctf_app.client_state.ctf_state.team_data {
+                            // Challenges window button
+                            if ui.button("Challenges").clicked() {
+                                ctf_app.current_window = CTFUiWindow::Challenge;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // // Undo the previous style change
+        // ui.set_style(style_clone);
+
         ui.heading("Settings");
         egui::ComboBox::from_label("Theme")
             .selected_text(format!("{:?}", ctf_app.ui_theme))
@@ -27,85 +74,51 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context) {
                 ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Mocha, "Mocha");
                 ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Latte, "Latte");
             });
-
-        // TODO: put stuff here to switch windows?
-
-        ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 0.0;
-                ui.label("powered by ");
-                ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                ui.label(" and ");
-                ui.hyperlink_to(
-                    "eframe",
-                    "https://github.com/emilk/egui/tree/master/crates/eframe",
-                );
-                ui.label(".");
-            });
-        });
     });
 
     egui::CentralPanel::default().show(ctx, |ui| {
-        // The central panel the region left after adding TopPanel's and SidePanel's
-
-        ui.heading("eframe template");
-        ui.hyperlink("https://github.com/emilk/eframe_template");
-        ui.add(egui::github_link_file!(
-            "https://github.com/emilk/eframe_template/blob/master/",
-            "Source code."
-        ));
-        egui::warn_if_debug_build(ui);
-
         // Check if we're connected to the server
         if let ConnectionStateEnum::Opened = &ctf_app.connection_state.get_state() {
-            // Check if we're authenticated
-            match &ctf_app.authentication_state.state {
-                AuthenticationStateEnum::NotAuthenticated => {
+            // Display the current window
+            match &ctf_app.current_window {
+                CTFUiWindow::Login => {
                     // Show the login panel
-                    ctf_app.login_panel.show(ctx, &mut ctf_app.connection_state);
-
-                    // Show the scoreboard
-                    ctf_app.scoreboard_panel.show(ctx, &ctf_app.client_state);
+                    ctf_app
+                        .login_panel
+                        .window(ctx, &mut ctf_app.connection_state);
                 }
-                AuthenticationStateEnum::Authenticated => {
-                    // Show the hacker list
-                    ctf_app.hacker_list.show(ctx, &ctf_app.client_state);
-
+                CTFUiWindow::Team => {
                     // Show the team panel
-                    ctf_app.team_panel.show(
+                    ctf_app.team_panel.window(
                         ctx,
                         &ctf_app.client_state,
                         &mut ctf_app.connection_state,
                     );
 
-                    // If we're on a team, show the challenge info
-                    if let TeamData::OnTeam(..) = &ctf_app.client_state.ctf_state.team_data {
-                        // Show the challenge list panel
-                        ctf_app
-                            .challenge_list_panel
-                            .show(ctx, &ctf_app.client_state);
+                    // Show the hacker list
+                    ctf_app.hacker_list.window(ctx, &ctf_app.client_state);
+                }
+                CTFUiWindow::Challenge => {
+                    // Show the challenge list panel
+                    ctf_app
+                        .challenge_list_panel
+                        .show(ctx, &ctf_app.client_state);
 
-                        // Show the challenge panel
-                        ctf_app.challenge_panel.show(
-                            ctx,
-                            &ctf_app.client_state,
-                            &ctf_app.challenge_list_panel.visible_challenge,
-                            &mut ctf_app.connection_state,
-                        );
-                    }
+                    // Show the challenge panel
+                    ctf_app.challenge_panel.window(
+                        ctx,
+                        &ctf_app.client_state,
+                        &ctf_app.challenge_list_panel.visible_challenge,
+                        &mut ctf_app.connection_state,
+                    );
+                }
+                CTFUiWindow::Scoreboard => {
+                    // Show the scoreboard
+                    ctf_app.scoreboard_panel.ui(ui, &ctf_app.client_state);
                 }
             }
         }
     });
-
-    if false {
-        egui::Window::new("Window").show(ctx, |ui| {
-            ui.label("Windows can be moved by dragging them.");
-            ui.label("They are automatically sized based on contents.");
-            ui.label("You can turn on resizing and scrolling if you like.");
-            ui.label("You would normally choose either panels OR windows.");
-        });
-    }
 
     // Toasts
     ctf_app.toasts.show(ctx);

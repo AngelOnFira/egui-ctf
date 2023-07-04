@@ -71,11 +71,11 @@ pub struct CTFApp {
     ui_theme: UiTheme,
 
     #[serde(skip)]
-    current_window: CTFUiWindows,
+    current_window: CTFUiWindow,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-pub enum CTFUiWindows {
+pub enum CTFUiWindow {
     Login,
     Team,
     Challenge,
@@ -162,7 +162,7 @@ impl Default for CTFApp {
                 ctf_state: CTFClientState::default(),
             },
             ui_theme: UiTheme::Frappe,
-            current_window: CTFUiWindows::Login,
+            current_window: CTFUiWindow::Scoreboard,
         }
     }
 }
