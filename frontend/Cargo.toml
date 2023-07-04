@@ -22,6 +22,7 @@ eframe = { version = "0.22.0", default-features = false, features = [
 ] }
 egui-notify = "0.7.0"
 egui_extras = "0.22.0"
+catppuccin-egui = "2.0"
 # egui_cable = { path = "../../egui_cable" }
 
 # You only need serde if you want app persistence:

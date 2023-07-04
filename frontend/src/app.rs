@@ -61,6 +61,16 @@ pub struct CTFApp {
     websocket_thread_handle: Option<std::thread::JoinHandle<()>>,
 
     client_state: ClientState,
+
+    ui_theme: UiTheme,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+pub enum UiTheme {
+    Latte,
+    Mocha,
+    Macchiato,
+    Frappe,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -242,6 +252,7 @@ impl Default for CTFApp {
             client_state: ClientState {
                 ctf_state: CTFClientState::default(),
             },
+            ui_theme: UiTheme::Frappe,
         }
     }
 }
@@ -443,7 +454,25 @@ impl eframe::App for CTFApp {
         }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
+            // Set the egui theme
+            catppuccin_egui::set_theme(&ctx, match self.ui_theme {
+                UiTheme::Latte => catppuccin_egui::LATTE,
+                UiTheme::Mocha => catppuccin_egui::MOCHA,
+                UiTheme::Macchiato => catppuccin_egui::MACCHIATO,
+                UiTheme::Frappe => catppuccin_egui::FRAPPE,
+            });
+
             ui.heading("Side Panel");
+            ui.heading("Settings");
+            egui::ComboBox::from_label("Theme")
+                .selected_text(format!("{:?}", self.ui_theme))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.ui_theme, UiTheme::Frappe, "Frappe");
+                    ui.selectable_value(&mut self.ui_theme, UiTheme::Macchiato, "Macchiato");
+                    ui.selectable_value(&mut self.ui_theme, UiTheme::Mocha, "Mocha");
+                    ui.selectable_value(&mut self.ui_theme, UiTheme::Latte, "Latte");
+                });
+
 
             // TODO: put stuff here to switch windows?
 
