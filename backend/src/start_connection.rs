@@ -15,7 +15,5 @@ pub async fn start_connection_route(
 ) -> Result<HttpResponse, Error> {
     let ws = WsConn::new(srv.get_ref().clone());
 
-    let resp = ws::start(ws, &req, stream);
-
-    resp
+    ws::start(ws, &req, stream)
 }

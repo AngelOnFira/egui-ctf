@@ -192,7 +192,7 @@ impl Repo {
                                 Set("".to_string())
                             }
                         },
-                        points: Set(challenge.challenge.points.clone()),
+                        points: Set(challenge.challenge.points),
                         flag: Set(challenge.challenge.flag.clone()),
                         active: Set(challenge.challenge.active),
                         author: Set(challenge.challenge.author.clone()),

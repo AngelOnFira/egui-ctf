@@ -80,7 +80,7 @@ impl Actor for CTFServer {
 impl CTFServer {
     fn send_message(&self, message: NetworkMessage, id_to: &ClientId) {
         if let Some(socket_recipient) = self.sessions.get(id_to) {
-            let _ = socket_recipient
+            socket_recipient
                 .socket
                 .do_send(WsActorMessage::IncomingMessage(message));
         } else {
@@ -94,7 +94,7 @@ impl CTFServer {
 
     fn broadcast_message(&self, message: NetworkMessage) {
         for (_, socket_recipient) in self.sessions.iter() {
-            let _ = socket_recipient
+            socket_recipient
                 .socket
                 .do_send(WsActorMessage::IncomingMessage(message.clone()));
         }
@@ -103,7 +103,7 @@ impl CTFServer {
     fn broadcast_message_authenticated(&self, message: NetworkMessage) {
         for (_id, socket_recipient) in self.sessions.iter() {
             if let Auth::Hacker { .. } = socket_recipient.auth {
-                let _ = socket_recipient
+                socket_recipient
                     .socket
                     .do_send(WsActorMessage::IncomingMessage(message.clone()));
             }
@@ -139,8 +139,7 @@ impl Handler<Connect> for CTFServer {
 
     fn handle(&mut self, msg: Connect, _ctx: &mut Context<Self>) -> Self::Result {
         println!("User connected: {}", msg.self_id);
-        self.sessions
-            .insert(msg.self_id, Session::new(msg.addr.clone()));
+        self.sessions.insert(msg.self_id, Session::new(msg.addr));
     }
 }
 
@@ -512,7 +511,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                         submission.correct = Set(false);
                                     }
 
-                                    let solved = submission.correct.as_ref().clone();
+                                    let solved = *submission.correct.as_ref();
 
                                     // Save the submission to the database
                                     submission.insert(&db_clone).await.unwrap();
@@ -814,7 +813,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 }
             }
 
-            return tasks;
+            tasks
         };
 
         let fut = actix::fut::wrap_future::<_, Self>(fut);

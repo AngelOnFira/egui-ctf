@@ -7,18 +7,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::app::ClientState;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct ChallengeList {
     // Challenge that should be displayed
     pub visible_challenge: Option<String>,
-}
-
-impl Default for ChallengeList {
-    fn default() -> Self {
-        Self {
-            visible_challenge: None,
-        }
-    }
 }
 
 impl ChallengeList {
@@ -56,7 +48,7 @@ impl ChallengeList {
                 // that category using a label. Sort the challenges by point
                 // value.
                 for (category, challenges) in
-                    sorted_challenges.iter().sorted_by(|a, b| a.0.cmp(&b.0))
+                    sorted_challenges.iter().sorted_by(|a, b| a.0.cmp(b.0))
                 {
                     ui.heading(category);
                     ui.separator();

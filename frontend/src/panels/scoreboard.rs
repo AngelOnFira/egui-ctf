@@ -8,13 +8,8 @@ use itertools::Itertools;
 
 use crate::app::ClientState;
 
+#[derive(Default)]
 pub struct ScoreboardPanel {}
-
-impl Default for ScoreboardPanel {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl ScoreboardPanel {
     fn name(&self) -> &'static str {
@@ -39,9 +34,8 @@ impl ScoreboardPanel {
             let lowest_time = global_state
                 .scoreboard
                 .teams
-                .iter()
-                .map(|(_, solves)| solves.iter().map(|s| s.time).min())
-                .flatten()
+                .values()
+                .filter_map(|solves| solves.iter().map(|s| s.time).min())
                 .min()
                 .unwrap_or(0);
 
@@ -49,9 +43,8 @@ impl ScoreboardPanel {
             let highest_time = global_state
                 .scoreboard
                 .teams
-                .iter()
-                .map(|(_, solves)| solves.iter().map(|s| s.time).max())
-                .flatten()
+                .values()
+                .filter_map(|solves| solves.iter().map(|s| s.time).max())
                 .max()
                 .unwrap_or(0);
 
@@ -59,8 +52,8 @@ impl ScoreboardPanel {
             let max_team_score = global_state
                 .scoreboard
                 .teams
-                .iter()
-                .map(|(_, solves)| solves.iter().map(|s| s.points).sum::<u32>())
+                .values()
+                .map(|solves| solves.iter().map(|s| s.points).sum::<u32>())
                 .max()
                 .unwrap_or(0);
 
@@ -91,14 +84,11 @@ impl ScoreboardPanel {
                     }
                     // Next, add the time and point data
                     format_string.push_str(&format!(
-                        "{:.0} points\n{}",
+                        "{:.0} points\n{:02}:{:02}:{:02}",
                         value.y,
-                        format!(
-                            "{:02}:{:02}:{:02}",
-                            (value.x / 60.0).floor(),
-                            (value.x % 60.0).floor(),
-                            (value.x % 1.0 * 60.0).floor()
-                        )
+                        (value.x / 60.0).floor(),
+                        (value.x % 60.0).floor(),
+                        (value.x % 1.0 * 60.0).floor()
                     ));
 
                     format_string
@@ -162,8 +152,7 @@ impl ScoreboardPanel {
                             max_team_score as f64 + max_team_score as f64 / (border / 2.0),
                         ],
                     ));
-                })
-                .response;
+                });
         }
     }
 }

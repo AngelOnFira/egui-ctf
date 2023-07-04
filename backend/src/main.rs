@@ -2,7 +2,6 @@ use actix::Actor;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
 use ctf_server::CTFServer;
-use env_logger;
 
 use repo::Repo;
 use start_connection::start_connection_route;

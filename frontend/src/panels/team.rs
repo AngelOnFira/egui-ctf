@@ -149,7 +149,7 @@ impl TeamPanel {
                             });
                         })
                         .body(|mut body| {
-                            for hacker in vec!["hacker1", "hacker2", "hacker3"] {
+                            for hacker in ["hacker1", "hacker2", "hacker3"] {
                                 body.row(20.0, |mut row| {
                                     row.col(|ui| {
                                         ui.label(hacker);

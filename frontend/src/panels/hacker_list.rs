@@ -77,7 +77,6 @@ impl HackerList {
                 }
                 None => {
                     self.enabled = false;
-                    return;
                 }
             }
         });

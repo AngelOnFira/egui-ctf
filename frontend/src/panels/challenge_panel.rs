@@ -8,17 +8,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::app::{ClientState, ConnectionState};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct ChallengePanel {
     flag: String,
-}
-
-impl Default for ChallengePanel {
-    fn default() -> Self {
-        Self {
-            flag: String::new(),
-        }
-    }
 }
 
 impl ChallengePanel {

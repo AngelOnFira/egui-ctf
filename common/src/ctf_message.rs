@@ -29,17 +29,9 @@ pub enum CTFMessage {
     LeaveTeam,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct CTFState {
     pub hacker_teams: Vec<HackerTeam>,
-}
-
-impl Default for CTFState {
-    fn default() -> Self {
-        Self {
-            hacker_teams: vec![],
-        }
-    }
 }
 
 impl CTFState {

@@ -456,7 +456,7 @@ impl eframe::App for CTFApp {
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             // Set the egui theme
             catppuccin_egui::set_theme(
-                &ctx,
+                ctx,
                 match self.ui_theme {
                     UiTheme::Latte => catppuccin_egui::LATTE,
                     UiTheme::Mocha => catppuccin_egui::MOCHA,
