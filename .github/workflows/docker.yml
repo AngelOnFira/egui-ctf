@@ -24,8 +24,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
-          file: ./backend/Dockerfile
+          file: backend/Dockerfile
           push: true
           tags: ghcr.io/angelonfira/egui-ctf/ctf-backend:latest
 
@@ -47,7 +46,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
-          file: ./discord-bot/Dockerfile
+          file: discord-bot/Dockerfile
           push: true
           tags: ghcr.io/angelonfira/egui-ctf/ctf-discord-bot:latest
