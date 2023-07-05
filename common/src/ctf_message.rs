@@ -64,7 +64,10 @@ impl CTFState {
     // }
 
     /// Build a hackers's team data
-    pub async fn get_hacker_team_data(client_id: DiscordClientId, db: &DatabaseConnection) -> TeamData {
+    pub async fn get_hacker_team_data(
+        client_id: DiscordClientId,
+        db: &DatabaseConnection,
+    ) -> TeamData {
         // Get the hacker
         let hacker = hacker::Entity::find()
             .filter(hacker::Column::DiscordId.eq(client_id))
@@ -106,7 +109,10 @@ impl CTFState {
     }
 
     // Build a hacker's client data
-    pub async fn get_hacker_client_data(client_id: DiscordClientId, db: &DatabaseConnection) -> ClientData {
+    pub async fn get_hacker_client_data(
+        client_id: DiscordClientId,
+        db: &DatabaseConnection,
+    ) -> ClientData {
         // Get the hacker
         let hacker = hacker::Entity::find()
             .filter(hacker::Column::DiscordId.eq(client_id))

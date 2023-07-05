@@ -73,7 +73,7 @@ async fn main() {
     // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-    let db = Database::connect("postgres://postgres:postgres@postgres:5432/postgres")
+    let db = Database::connect("postgres://postgres:postgres@db:5432/postgres")
         .await
         .unwrap();
 

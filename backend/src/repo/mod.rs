@@ -144,7 +144,9 @@ impl Repo {
 
     /// Load all the challenges into the database
     pub async fn update_database(&self) -> Option<&RepoChallenge> {
-        let db = Database::connect("sqlite://../file.db").await.unwrap();
+        let db = Database::connect("postgres://postgres:postgres@db:5432/postgres")
+            .await
+            .unwrap();
 
         // Iterate over each challenge
         for challenge in self.challenges.values() {

@@ -7,7 +7,8 @@ use actix::{
 };
 use common::{
     ctf_message::{
-        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, GameData, TeamData, DiscordClientId,
+        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, DiscordClientId,
+        GameData, TeamData,
     },
     ClientId, NetworkMessage,
 };
@@ -45,8 +46,6 @@ impl Session {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 enum Auth {
     Unauthenticated,
@@ -56,7 +55,8 @@ enum Auth {
 impl CTFServer {
     pub async fn new_with_rooms() -> anyhow::Result<Self> {
         // Load the database connection with the sqlite file.db
-        let db = Database::connect("sqlite://../file.db").await?;
+        let db = Database::connect("postgres://postgres:postgres@db:5432/postgres").await?;
+
         Ok(CTFServer {
             db,
             sessions: HashMap::new(),
