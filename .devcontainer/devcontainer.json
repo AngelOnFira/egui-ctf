@@ -8,7 +8,10 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"GitHub.copilot"
+				"GitHub.copilot",
+				"RobbOwen.synthwave-vscode",
+				"eamodio.gitlens",
+				"hashicorp.hcl"
 			]
 		}
 	}

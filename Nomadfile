@@ -1,0 +1,132 @@
+job "merged-staging" {
+  datacenters = ["scs"]
+
+  group "ctf-backend" {
+    network {
+      port "backend" {
+        to = 4040
+      }
+    }
+
+    service {
+      name = "ctf-backend"
+      port = "frontend"
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.discretemath.ca`)",
+        "traefik.http.routers.ctf-backend.entrypoints=https",
+        "traefik.http.routers.ctf-backend.tls.certresolver=letsencrypt"
+      ]
+
+      check {
+        type     = "http"
+        port     = "frontend"
+        path     = "/"
+        interval = "5s"
+        timeout  = "2s"
+
+        check_restart {
+          limit           = 3
+          grace           = "30s"
+          ignore_warnings = false
+        }
+      }
+
+      connect {
+        sidecar_service {
+          proxy {
+            upstreams {
+              destination_name = "ctf-postgres"
+              local_bind_port  = 5432
+            }
+          }
+        }
+      }
+    }
+
+    task "nextjs" {
+      driver = "docker"
+
+      config {
+        image = "ghcr.io/carletoncomputersciencesociety/merged/merged-client:latest"
+        ports = ["frontend"]
+      }
+
+      resources {
+        cpu    = 1000
+        memory = 1024
+      }
+    }
+  }
+
+  group "ctf-discord-bot" {
+    service {
+      name = "discord-bot"
+
+      connect {
+        sidecar_service {
+          proxy {
+            upstreams {
+              destination_name = "ctf-postgres"
+              local_bind_port  = 5432
+            }
+          }
+        }
+      }
+    }
+
+    task "django" {
+      driver = "docker"
+
+      config {
+        image = "ghcr.io/carletoncomputersciencesociety/merged/merged-api:latest"
+        ports = ["api"]
+      }
+
+      resources {
+        cpu    = 4096
+        memory = 1024
+      }
+
+      env {
+        DISCRETEMATH_API_DATABASE_HOST = "${NOMAD_IP_postgres}"
+      }
+    }
+  }
+
+  group "database" {
+    network {
+      mode = "bridge"
+    }
+
+    service {
+      name = "ctf-postgres"
+      port = "5432"
+
+      connect {
+        sidecar_service {}
+      }
+    }
+
+    task "postgres" {
+      driver = "docker"
+
+      config {
+        image = "postgres:15"
+        ports = ["postgres"]
+      }
+
+      env {
+        POSTGRES_USER     = "postgres"
+        POSTGRES_PASSWORD = "postgres"
+        POSTGRES_DB       = "postgres"
+      }
+
+      resources {
+        cpu    = 1000
+        memory = 1024
+      }
+    }
+  }
+}
