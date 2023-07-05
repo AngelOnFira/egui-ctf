@@ -3,6 +3,11 @@ FROM rust:1 as builder
 WORKDIR /app
 
 COPY . /app
+
+# Install ld
+RUN apt-get update && apt-get install -y \
+    binutils-dev
+    
 RUN cd discord-bot; cargo build --release
 
 
