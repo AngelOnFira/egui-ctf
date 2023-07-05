@@ -3,6 +3,7 @@ job "merged-staging" {
 
   group "ctf-backend" {
     network {
+      mode = "bridge"
       port "backend" {
         to = 4040
       }
@@ -10,28 +11,14 @@ job "merged-staging" {
 
     service {
       name = "ctf-backend"
-      port = "frontend"
+      port = "backend"
 
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.discretemath.ca`)",
+        "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.h4tt.ca`)",
         "traefik.http.routers.ctf-backend.entrypoints=https",
         "traefik.http.routers.ctf-backend.tls.certresolver=letsencrypt"
       ]
-
-      check {
-        type     = "http"
-        port     = "frontend"
-        path     = "/"
-        interval = "5s"
-        timeout  = "2s"
-
-        check_restart {
-          limit           = 3
-          grace           = "30s"
-          ignore_warnings = false
-        }
-      }
 
       connect {
         sidecar_service {
@@ -45,22 +32,26 @@ job "merged-staging" {
       }
     }
 
-    task "nextjs" {
+    task "actix-backend" {
       driver = "docker"
 
       config {
-        image = "ghcr.io/carletoncomputersciencesociety/merged/merged-client:latest"
-        ports = ["frontend"]
+        image = "ghcr.io/angelonfira/egui-ctf/ctf-backend:latest"
+        ports = ["backend"]
       }
 
       resources {
         cpu    = 1000
-        memory = 1024
+        memory = 1000
       }
     }
   }
 
   group "ctf-discord-bot" {
+    network {
+      mode = "bridge"
+    }
+
     service {
       name = "discord-bot"
 
@@ -76,21 +67,20 @@ job "merged-staging" {
       }
     }
 
-    task "django" {
+    task "serenity-bot" {
       driver = "docker"
 
       config {
-        image = "ghcr.io/carletoncomputersciencesociety/merged/merged-api:latest"
-        ports = ["api"]
+        image = "ghcr.io/angelonfira/egui-ctf/ctf-discord-bot:latest"
       }
 
       resources {
-        cpu    = 4096
-        memory = 1024
+        cpu    = 1000
+        memory = 1000
       }
 
       env {
-        DISCRETEMATH_API_DATABASE_HOST = "${NOMAD_IP_postgres}"
+        # DISCRETEMATH_API_DATABASE_HOST = "${NOMAD_IP_postgres}"
       }
     }
   }
@@ -125,7 +115,7 @@ job "merged-staging" {
 
       resources {
         cpu    = 1000
-        memory = 1024
+        memory = 1000
       }
     }
   }

@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 RUN cd discord-bot; cargo build --release
 
 
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 
 COPY --from=builder /app/target/release/h4tt-discord-bot /app/h4tt-discord-bot
 
