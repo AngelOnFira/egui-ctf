@@ -1,4 +1,4 @@
-job "merged-staging" {
+job "ctf-dashboard" {
   datacenters = ["scs"]
 
   group "ctf-backend" {
@@ -81,6 +81,16 @@ job "merged-staging" {
 
       env {
         # DISCRETEMATH_API_DATABASE_HOST = "${NOMAD_IP_postgres}"
+      }
+
+      template {
+        data = <<EOH
+DISCORD_TOKEN="{{ key "ctf-discord-api-key" }}"
+GUILD_ID="{{ key "ctf-guild-id" }}"
+EOH
+
+        destination = "secrets/file.env"
+        env         = true
       }
     }
   }

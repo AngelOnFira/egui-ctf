@@ -144,7 +144,7 @@ impl Repo {
 
     /// Load all the challenges into the database
     pub async fn update_database(&self) -> Option<&RepoChallenge> {
-        let db = Database::connect("postgres://postgres:postgres@db:5432/postgres")
+        let db = Database::connect("postgres://postgres:postgres@localhost:5432/postgres")
             .await
             .unwrap();
 

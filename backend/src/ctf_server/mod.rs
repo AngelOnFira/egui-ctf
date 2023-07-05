@@ -55,7 +55,7 @@ enum Auth {
 impl CTFServer {
     pub async fn new_with_rooms() -> anyhow::Result<Self> {
         // Load the database connection with the sqlite file.db
-        let db = Database::connect("postgres://postgres:postgres@db:5432/postgres").await?;
+        let db = Database::connect("postgres://postgres:postgres@localhost:5432/postgres").await?;
 
         Ok(CTFServer {
             db,

@@ -206,7 +206,7 @@ impl CTFApp {
             ctx.request_repaint(); // wake up UI thread on new message}
         };
 
-        match ewebsock::connect_with_wakeup("ws://127.0.0.1:4040/ws", wakeup) {
+        match ewebsock::connect_with_wakeup("ws://api.ctf.h4tt.ca/ws", wakeup) {
             Ok((ws_sender, ws_receiver)) => {
                 self.connection_state
                     .set_state_connected(ws_sender, ws_receiver);
