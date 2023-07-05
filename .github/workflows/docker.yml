@@ -25,10 +25,11 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
+          dockerfile: ./backend/Dockerfile
           push: true
           tags: ghcr.io/AngelOnFira/egui-ctf/ctf-backend:latest
 
-  backend-docker-bot:
+  discord-bot-docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,5 +48,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
+          dockerfile: ./discord-bot/Dockerfile
           push: true
           tags: ghcr.io/AngelOnFira/egui-ctf/ctf-discord-bot:latest
