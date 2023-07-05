@@ -6,7 +6,7 @@ COPY . /app
 
 # Install ld
 RUN apt-get update && apt-get install -y \
-    binutils-dev
+    lld
 
 RUN cd backend; cargo build --release
 
