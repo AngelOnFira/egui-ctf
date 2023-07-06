@@ -4,6 +4,7 @@ job "ctf-dashboard" {
   group "ctf-backend" {
     network {
       mode = "bridge"
+      
       port "backend" {
         to = 4040
       }
@@ -44,6 +45,10 @@ job "ctf-dashboard" {
         cpu    = 1000
         memory = 1000
       }
+
+      env {
+        test = 123
+      }
     }
   }
 
@@ -80,6 +85,7 @@ job "ctf-dashboard" {
       }
 
       env {
+        test = 123
         # DISCRETEMATH_API_DATABASE_HOST = "${NOMAD_IP_postgres}"
       }
 

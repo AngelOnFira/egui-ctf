@@ -34,7 +34,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(ctf_server.clone())
             .wrap(Logger::default())
     })
-    .bind("127.0.0.1:4040")?
+    .bind("0.0.0.0:4040")?
     .run()
     .await
 }
