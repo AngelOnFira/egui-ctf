@@ -16,4 +16,8 @@ FROM debian:bullseye-slim
 COPY --from=builder /app/target/release/backend /app/backend
 COPY backend/run.sh /app/run.sh
 
+# Install openssl
+RUN apt-get update && apt-get install -y \
+    openssl
+
 ENTRYPOINT ["/app/run.sh"]
