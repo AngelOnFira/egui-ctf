@@ -47,7 +47,7 @@ job "ctf-dashboard" {
       }
 
       env {
-        test = 12345
+        test = 123456
         RUST_BACKTRACE = 1
       }
     }

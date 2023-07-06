@@ -14,7 +14,20 @@ mod ws_conn;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let ctf_server = CTFServer::new_with_rooms().await.unwrap();
+    // Try connecting to the database again once every 5 seconds if it fails
+    let ctf_server = {
+        loop {
+            let result = CTFServer::new_with_rooms().await;
+
+            match result {
+                Ok(ctf_server) => break ctf_server,
+                Err(e) => {
+                    println!("Failed to connect to database: {}", e);
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                }
+            }
+        }
+    };
     let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
