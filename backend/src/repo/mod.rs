@@ -36,9 +36,15 @@ pub struct Challenge {
 impl Repo {
     pub fn clone_repo() {
         let url = "https://github.com/h4tt/H4TT-3.0.git";
-        let _repo = match Repository::clone(url, "./ctf") {
-            Ok(repo) => repo,
-            Err(e) => panic!("failed to clone: {}", e),
+        // Clone a repository to a local directory
+        let repo = loop {
+            match Repository::clone(url, "./ctf") {
+                Ok(repo) => break repo,
+                Err(e) => {
+                    println!("failed to clone: {}", e);
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                }
+            };
         };
     }
 
