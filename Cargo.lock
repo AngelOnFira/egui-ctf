@@ -634,6 +634,7 @@ dependencies = [
  "fake",
  "git2",
  "itertools 0.10.5",
+ "migration",
  "rand",
  "sea-orm",
  "serde",

@@ -43,7 +43,7 @@ job "ctf-dashboard" {
       driver = "docker"
 
       config {
-        image = "ghcr.io/angelonfira/egui-ctf/ctf-backend:671a60d8147c"
+        image = "ghcr.io/angelonfira/egui-ctf/ctf-backend:latest"
         // ports = ["backend"]
       }
 

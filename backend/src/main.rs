@@ -3,6 +3,7 @@ use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 
 use ctf_server::CTFServer;
 
+use migration::{Migrator, MigratorTrait};
 use repo::Repo;
 use start_connection::start_connection_route;
 
@@ -28,12 +29,16 @@ async fn main() -> std::io::Result<()> {
             }
         }
     };
+
+    // Run database migrations
+    Migrator::up(&ctf_server.db, None).await.unwrap();
+
     let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
 
     // Download the repo
-    // Repo::clone_repo();
+    Repo::clone_repo();
 
     // Load the repo from the repository
     let repo = Repo::parse_repo();

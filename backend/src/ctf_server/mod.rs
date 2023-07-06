@@ -27,7 +27,7 @@ pub type WsClientSocket = Recipient<WsActorMessage>;
 pub type GameRoomSocket = Recipient<CTFRoomMessage>;
 
 pub struct CTFServer {
-    db: DatabaseConnection,
+    pub db: DatabaseConnection,
     sessions: HashMap<ClientId, Session>,
     pub ctf_state: CTFState,
 }
