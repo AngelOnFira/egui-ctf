@@ -14,5 +14,6 @@ RUN cd backend; cargo build --release
 FROM debian:bullseye-slim
 
 COPY --from=builder /app/target/release/backend /app/backend
+COPY backend/run.sh /app/run.sh
 
-ENTRYPOINT ["/app/backend"]
+ENTRYPOINT ["/app/run.sh"]

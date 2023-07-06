@@ -73,9 +73,20 @@ async fn main() {
     // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-    let db = Database::connect("postgres://postgres:postgres@localhost:5432/postgres")
-        .await
-        .unwrap();
+    let db = loop {
+        let result =
+            Database::connect("postgres://postgres:postgres@localhost:5432/postgres").await;
+
+        // If there was an error connecting to the database, sleep for 5 seconds
+        // and try again
+        match result {
+            Ok(db) => break db,
+            Err(e) => {
+                println!("Failed to connect to database: {}", e);
+                std::thread::sleep(std::time::Duration::from_secs(5));
+            }
+        }
+    };
 
     // Build our client.
     let mut client = Client::builder(token, GatewayIntents::empty())

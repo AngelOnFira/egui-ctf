@@ -2,24 +2,30 @@ job "ctf-dashboard" {
   datacenters = ["scs"]
 
   group "ctf-backend" {
+    affinity {
+      attribute = "${node.unique.name}"
+      value     = "nomad_client_2"
+      weight    = 100
+    }
+
     network {
       mode = "bridge"
 
-      port "backend" {
-        to = 4040
-      }
+      // port "backend" {
+      //   to = 4040
+      // }
     }
 
     service {
       name = "ctf-backend"
-      port = "backend"
+      // port = "backend"
 
-      tags = [
-        "traefik.enable=true",
-        "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.h4tt.ca`)",
-        "traefik.http.routers.ctf-backend.entrypoints=https",
-        "traefik.http.routers.ctf-backend.tls.certresolver=letsencrypt"
-      ]
+      // tags = [
+      //   "traefik.enable=true",
+      //   "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.h4tt.ca`)",
+      //   "traefik.http.routers.ctf-backend.entrypoints=https",
+      //   "traefik.http.routers.ctf-backend.tls.certresolver=letsencrypt"
+      // ]
 
       connect {
         sidecar_service {
@@ -37,8 +43,8 @@ job "ctf-dashboard" {
       driver = "docker"
 
       config {
-        image = "ghcr.io/angelonfira/egui-ctf/ctf-backend:latest"
-        ports = ["backend"]
+        image = "ghcr.io/angelonfira/egui-ctf/ctf-backend:671a60d8147c"
+        // ports = ["backend"]
       }
 
       resources {
@@ -47,13 +53,19 @@ job "ctf-dashboard" {
       }
 
       env {
-        test = 123456
+        test = 123
         RUST_BACKTRACE = 1
       }
     }
   }
 
   group "ctf-discord-bot" {
+    affinity {
+      attribute = "${node.unique.name}"
+      value     = "nomad_client_2"
+      weight    = 100
+    }
+
     network {
       mode = "bridge"
     }
@@ -86,8 +98,7 @@ job "ctf-dashboard" {
       }
 
       env {
-        test = 1234
-        # DISCRETEMATH_API_DATABASE_HOST = "${NOMAD_IP_postgres}"
+        test = 12
       }
 
       template {
@@ -103,6 +114,12 @@ EOH
   }
 
   group "database" {
+    affinity {
+      attribute = "${node.unique.name}"
+      value     = "nomad_client_2"
+      weight    = 100
+    }
+
     network {
       mode = "bridge"
     }
