@@ -18,6 +18,6 @@ COPY backend/run.sh /app/run.sh
 
 # Install openssl
 RUN apt-get update && apt-get install -y \
-    openssl
+    git-all
 
 ENTRYPOINT ["/app/run.sh"]
