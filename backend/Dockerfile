@@ -18,7 +18,7 @@ COPY backend/run.sh /app/run.sh
 
 # Install git with no frontend
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
-    && apt-get install -y --no-install-recommends \
+    && apt-get install -y \
         git
 
 ENTRYPOINT ["/app/run.sh"]
