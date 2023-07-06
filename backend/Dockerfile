@@ -8,7 +8,7 @@ COPY . /app
 RUN apt-get update && apt-get install -y \
     lld
 
-RUN cd backend; cargo build --release
+RUN cd backend; cargo build
 
 
 FROM debian:bullseye-slim
