@@ -4,28 +4,28 @@ job "ctf-dashboard" {
   group "ctf-backend" {
     affinity {
       attribute = "${node.unique.name}"
-      value     = "nomad_client_2"
+      value     = "nomad_client_1"
       weight    = 100
     }
 
     network {
       mode = "bridge"
 
-      // port "backend" {
-      //   to = 4040
-      // }
+      port "backend" {
+        to = 4040
+      }
     }
 
     service {
       name = "ctf-backend"
-      // port = "backend"
+      port = "backend"
 
-      // tags = [
-      //   "traefik.enable=true",
-      //   "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.h4tt.ca`)",
-      //   "traefik.http.routers.ctf-backend.entrypoints=https",
-      //   "traefik.http.routers.ctf-backend.tls.certresolver=letsencrypt"
-      // ]
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.ctf-backend.rule=Host(`api.ctf.h4tt.ca`)",
+        "traefik.http.routers.ctf-backend.entrypoints=https",
+        "traefik.http.routers.ctf-backend.tls.certresolver=letsencrypt"
+      ]
 
       connect {
         sidecar_service {
@@ -35,6 +35,8 @@ job "ctf-dashboard" {
               local_bind_port  = 5432
             }
           }
+
+          tags = ["dummy"]
         }
       }
     }
@@ -53,7 +55,7 @@ job "ctf-dashboard" {
       }
 
       env {
-        test = 123
+        test = 12
         RUST_BACKTRACE = 1
       }
     }
@@ -62,7 +64,7 @@ job "ctf-dashboard" {
   group "ctf-discord-bot" {
     affinity {
       attribute = "${node.unique.name}"
-      value     = "nomad_client_2"
+      value     = "nomad_client_1"
       weight    = 100
     }
 
@@ -116,7 +118,7 @@ EOH
   group "database" {
     affinity {
       attribute = "${node.unique.name}"
-      value     = "nomad_client_2"
+      value     = "nomad_client_1"
       weight    = 100
     }
 
