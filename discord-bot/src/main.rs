@@ -2,6 +2,7 @@ mod commands;
 
 use std::env;
 
+use commands::{create_interactive_prompt, token};
 use sea_orm::{Database, DatabaseConnection};
 use serenity::async_trait;
 
@@ -21,8 +22,8 @@ impl EventHandler for Handler {
             println!("Received command interaction: {:#?}", command);
 
             let content = match command.data.name.as_str() {
-                "token" => {
-                    commands::token::run(
+                token::COMMAND_NAME => {
+                    token::run(
                         &command.data.options,
                         self.db.clone(),
                         &command.member.as_ref().unwrap().user.id,
@@ -30,7 +31,16 @@ impl EventHandler for Handler {
                     )
                     .await
                 }
-                _ => "not implemented :(".to_string(),
+                create_interactive_prompt::COMMAND_NAME => {
+                    create_interactive_prompt::run(
+                        &command.data.options,
+                        self.db.clone(),
+                        command.channel_id,
+                        &ctx,
+                    )
+                    .await
+                }
+                _ => format!("not implemented :( {}", command.data.name),
             };
 
             if let Err(why) = command
@@ -57,7 +67,9 @@ impl EventHandler for Handler {
         );
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-            commands.create_application_command(|command| commands::token::register(command))
+            commands
+                .create_application_command(|command| token::register(command))
+                .create_application_command(|command| create_interactive_prompt::register(command))
         })
         .await;
 

@@ -5,6 +5,8 @@ use serenity::builder::CreateApplicationCommand;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
 use serenity::model::prelude::UserId;
 
+pub const COMMAND_NAME: &str = "token";
+
 pub async fn run(
     _options: &[CommandDataOption],
     db: DatabaseConnection,
@@ -49,5 +51,5 @@ pub async fn run(
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command.name("token").description("Get a login token")
+    command.name(COMMAND_NAME).description("Get a login token")
 }
