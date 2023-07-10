@@ -14,4 +14,5 @@ RUN cargo install cargo-quickinstall \
    && cargo quickinstall trunk \
    && cargo quickinstall wasm-bindgen-cli \
    && cargo quickinstall wasm-pack \
+   && cargo quickinstall just \
    && rustup target add wasm32-unknown-unknown
