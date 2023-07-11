@@ -1,10 +1,10 @@
-use entity::entities::{hacker, message_component_data, token};
+use entity::entities::message_component_data;
 use sea_orm::prelude::Uuid;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use serenity::builder::{CreateApplicationCommand, CreateButton};
 use serenity::model::prelude::component::ButtonStyle;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
-use serenity::model::prelude::{ChannelId, ReactionType, UserId};
+use serenity::model::prelude::ChannelId;
 
 use crate::commands::{StoredDiscordTask, TaskType};
 
@@ -29,7 +29,7 @@ pub async fn run(
     .unwrap();
 
     // The menu that people will be able to use to get their login token
-    let m = channel_id
+    let _m = channel_id
         .send_message(&ctx, |m| {
             m.content("Help menu").components(|c| {
                 c.create_action_row(|r| {
@@ -47,7 +47,7 @@ pub async fn run(
         .unwrap();
 
     // Return the token to the user
-    format!("Your token is")
+    "Your token is".to_string()
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {

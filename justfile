@@ -46,6 +46,11 @@ check:
 	cargo test --workspace --doc
 	trunk build
 
+tidy:
+	cargo fix --workspace --allow-dirty --allow-staged
+	cargo clippy --fix --workspace --allow-dirty --allow-staged
+	cargo fmt
+
 frontend:
 	cd frontend \
 	&& trunk serve

@@ -43,7 +43,7 @@ impl Repo {
         }
 
         // Clone a repository to a local directory
-        let repo = loop {
+        let _repo = loop {
             match Repository::clone(url, "./ctf") {
                 Ok(repo) => break repo,
                 Err(e) => {

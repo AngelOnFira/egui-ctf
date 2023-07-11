@@ -12,7 +12,7 @@ use serenity::async_trait;
 use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
-use serenity::model::prelude::component;
+
 use serenity::prelude::*;
 use uuid::Uuid;
 

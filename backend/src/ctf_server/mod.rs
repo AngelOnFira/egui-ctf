@@ -289,7 +289,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                             tasks.push(ActorTask::UpdateState(
                                                 UpdateState::SessionAuth {
                                                     auth: Auth::Hacker {
-                                                        discord_id: hacker.discord_id.clone(),
+                                                        discord_id: hacker.discord_id,
                                                     },
                                                 },
                                             ));
