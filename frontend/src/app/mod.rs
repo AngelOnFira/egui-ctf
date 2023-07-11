@@ -206,7 +206,9 @@ impl CTFApp {
             ctx.request_repaint(); // wake up UI thread on new message}
         };
 
-        match ewebsock::connect_with_wakeup("wss://api.ctf.h4tt.ca/ws", wakeup) {
+        // TODO: I don't know if there's a better way to hardcode the domain in,
+        // since I can't ship an envfile with the frontend I think
+        match ewebsock::connect_with_wakeup(include_str!("backend_domain.txt"), wakeup) {
             Ok((ws_sender, ws_receiver)) => {
                 self.connection_state
                     .set_state_connected(ws_sender, ws_receiver);
