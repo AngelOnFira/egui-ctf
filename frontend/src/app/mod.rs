@@ -17,6 +17,7 @@ use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
+use wasm_timer::Instant;
 
 use self::{
     connection_state::{ConnectionState, ConnectionStateEnum},
@@ -197,6 +198,27 @@ impl CTFApp {
     }
 
     fn connect(&mut self, ctx: egui::Context) {
+        // If we tried connecting less than 5 seconds ago, don't try again. This
+        // is doing something to prevent spamming the server with connections
+        // from an error that is coming up when a connection can't be made.
+        // TODO: Fix this error
+
+        let mut connection_state = self.connection_state.inner.lock().unwrap();
+
+        if let Some(last_connection_attempt) = connection_state.last_connection_attempt {
+            if last_connection_attempt.elapsed() < Duration::from_secs(5) {
+                return;
+            }
+            // If 5 seconds have passed, update the last connection attempt
+            else {
+                connection_state.last_connection_attempt = Some(Instant::now());
+            }
+        } else {
+            connection_state.last_connection_attempt = Some(Instant::now());
+        }
+
+        drop(connection_state);
+
         self.connection_state.set_state_connecting();
 
         let ws_state_queue_clone = self.ws_state_queue.clone();
@@ -258,6 +280,7 @@ impl eframe::App for CTFApp {
                     self.connection_state.set_state_opened();
                 }
                 WsEvent::Closed => {
+                    log::info!("Connection closed");
                     self.connection_state.set_state_disconnected();
                 }
                 _ => {}

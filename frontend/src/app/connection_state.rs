@@ -1,6 +1,7 @@
 use common::NetworkMessage;
 
 use ewebsock::{WsMessage, WsReceiver, WsSender};
+use wasm_timer::Instant;
 
 use std::{
     fmt::Debug,
@@ -20,6 +21,7 @@ impl Default for ConnectionState {
                 message_queue: Vec::new(),
                 ws_sender: None,
                 ws_receiver: None,
+                last_connection_attempt: None,
             })),
         }
     }
@@ -30,6 +32,7 @@ pub struct ConnectionStateInner {
     pub message_queue: Vec<NetworkMessage>,
     pub ws_sender: Option<WsSender>,
     pub ws_receiver: Option<WsReceiver>,
+    pub last_connection_attempt: Option<Instant>,
 }
 
 impl ConnectionState {
