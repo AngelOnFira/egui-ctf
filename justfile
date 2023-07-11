@@ -21,11 +21,11 @@ make-migration:
 		new_migration
 
 deploy:
-	@ nomad job restart \
-		@ -address=http://localhost:4646 \
-		@ -group ctf-backend \
-		@ -task actix-backend \
-		@ ctf-dashboard
+	nomad job restart \
+		-address=http://localhost:4646 \
+		-group ctf-backend \
+		-task actix-backend \
+		ctf-dashboard
 
 	nomad job restart \
 		-address=http://localhost:4646 \

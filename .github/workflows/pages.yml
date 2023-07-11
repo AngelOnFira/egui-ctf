@@ -34,7 +34,7 @@ jobs:
         run: wget -qO- https://github.com/thedodd/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
         
       - name: Overwrite backend_domain file
-        run: echo "wss://api.ctf.h4tt.ca/ws" > frontend/src/app/backend_domain.txt
+        run: echo "wss://api.ctf.discretemath.ca/ws" > frontend/src/app/backend_domain.txt
 
       - name: Build # build
         # "${GITHUB_REPOSITORY#*/}" evaluates into the name of the repository
