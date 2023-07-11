@@ -7,7 +7,7 @@ on:
 
 jobs:
   backend-docker:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -33,7 +33,7 @@ jobs:
           tags: ghcr.io/angelonfira/egui-ctf/ctf-backend:latest
 
   discord-bot-docker:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v3
