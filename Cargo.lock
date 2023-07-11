@@ -2037,8 +2037,11 @@ dependencies = [
  "common",
  "entity",
  "sea-orm",
+ "serde",
+ "serde_json",
  "serenity",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

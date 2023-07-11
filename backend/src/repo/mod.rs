@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, fs, path::Path, time::Duration};
 
 use entity::entities::challenge::{self};
 use git2::Repository;
@@ -36,13 +36,19 @@ pub struct Challenge {
 impl Repo {
     pub fn clone_repo() {
         let url = "https://github.com/h4tt/H4TT-3.0.git";
+
+        // Make sure that the ctf folder doesn't exist
+        if Path::new("./ctf").exists() {
+            fs::remove_dir_all("./ctf").unwrap();
+        }
+
         // Clone a repository to a local directory
         let repo = loop {
             match Repository::clone(url, "./ctf") {
                 Ok(repo) => break repo,
                 Err(e) => {
                     println!("failed to clone: {}", e);
-                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    std::thread::sleep(Duration::from_secs(5));
                 }
             };
         };

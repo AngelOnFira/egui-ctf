@@ -45,3 +45,17 @@ check:
 	cargo test --workspace --all-targets --all-features
 	cargo test --workspace --doc
 	trunk build
+
+frontend:
+	cd frontend \
+	&& trunk serve
+
+backend:
+	cd backend \
+	&& cargo run
+
+set dotenv-load
+
+discord:
+	cd discord-bot \
+	&& cargo run

@@ -3,13 +3,18 @@ mod commands;
 use std::env;
 
 use commands::{create_interactive_prompt, token};
-use sea_orm::{Database, DatabaseConnection};
+use entity::entities::{hacker, message_component_data};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
+};
 use serenity::async_trait;
 
 use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
+use serenity::model::prelude::component;
 use serenity::prelude::*;
+use uuid::Uuid;
 
 struct Handler {
     db: DatabaseConnection,
@@ -18,41 +23,117 @@ struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            println!("Received command interaction: {:#?}", command);
+        match interaction {
+            Interaction::ApplicationCommand(command) => {
+                println!("Received command interaction: {:#?}", command);
 
-            let content = match command.data.name.as_str() {
-                token::COMMAND_NAME => {
-                    token::run(
-                        &command.data.options,
-                        self.db.clone(),
-                        &command.member.as_ref().unwrap().user.id,
-                        &command.member.as_ref().unwrap().user.name,
-                    )
-                    .await
-                }
-                create_interactive_prompt::COMMAND_NAME => {
-                    create_interactive_prompt::run(
-                        &command.data.options,
-                        self.db.clone(),
-                        command.channel_id,
-                        &ctx,
-                    )
-                    .await
-                }
-                _ => format!("not implemented :( {}", command.data.name),
-            };
+                let content = match command.data.name.as_str() {
+                    token::COMMAND_NAME => {
+                        token::run(
+                            &command.data.options,
+                            self.db.clone(),
+                            &command.member.as_ref().unwrap().user.id,
+                            &command.member.as_ref().unwrap().user.name,
+                        )
+                        .await
+                    }
+                    create_interactive_prompt::COMMAND_NAME => {
+                        create_interactive_prompt::run(
+                            &command.data.options,
+                            self.db.clone(),
+                            command.channel_id,
+                            &ctx,
+                        )
+                        .await
+                    }
+                    _ => format!("not implemented :( {}", command.data.name),
+                };
 
-            if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content))
-                })
-                .await
-            {
-                println!("Cannot respond to slash command: {}", why);
+                if let Err(why) = command
+                    .create_interaction_response(&ctx.http, |response| {
+                        response
+                            .kind(InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| message.content(content))
+                    })
+                    .await
+                {
+                    println!("Cannot respond to slash command: {}", why);
+                }
             }
+            Interaction::MessageComponent(ref component) => {
+                // Convert the custom_id string into a uuid
+                let component_id = Uuid::parse_str(&component.data.custom_id).unwrap();
+
+                // Get the task to do from the database
+                let task = message_component_data::Entity::find_by_id(component_id)
+                    .one(&self.db)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .payload;
+
+                // Parse the task
+                let task: commands::StoredDiscordTask = serde_json::from_value(task).unwrap();
+
+                // Complete the task
+                match task {
+                    commands::StoredDiscordTask::Task(task_type) => match task_type {
+                        commands::TaskType::CreateToken => {
+                            let member = component.member.clone().unwrap();
+                            // Get the hacker from the database, or create a hacker if they aren't in
+                            // already
+                            let hacker = hacker::Entity::find()
+                                .filter(hacker::Column::DiscordId.eq(member.user.id.0))
+                                .one(&self.db)
+                                .await
+                                .unwrap();
+
+                            let hacker: hacker::Model = match hacker {
+                                Some(hacker) => hacker,
+                                None => {
+                                    let hacker = hacker::ActiveModel {
+                                        discord_id: Set(member.user.id.0 as i64),
+                                        username: Set(member.user.name.to_string()),
+                                        ..Default::default()
+                                    };
+                                    dbg!(hacker.clone());
+                                    hacker.insert(&self.db).await.unwrap()
+                                }
+                            };
+
+                            // Generate a token for the hacker
+                            let token: entity::entities::token::Model =
+                                entity::entities::token::ActiveModel {
+                                    fk_hacker_id: Set(Some(hacker.discord_id)),
+                                    token: Set(Uuid::new_v4().as_simple().to_string()),
+                                    // 20 minutes from now
+                                    expiry: Set((chrono::Utc::now()
+                                        + chrono::Duration::minutes(20))
+                                    .naive_local()),
+                                    ..Default::default()
+                                }
+                                .insert(&self.db)
+                                .await
+                                .unwrap();
+
+                            // Return the token to the user
+                            component
+                                .create_interaction_response(&ctx.http, |response| {
+                                    response
+                                        .kind(InteractionResponseType::ChannelMessageWithSource)
+                                        .interaction_response_data(|message| {
+                                            message
+                                                .content(format!("Your token is: {}", token.token))
+                                                .ephemeral(true)
+                                        })
+                                })
+                                .await
+                                .unwrap();
+                        }
+                    },
+                }
+            }
+            _ => (),
         }
     }
 
