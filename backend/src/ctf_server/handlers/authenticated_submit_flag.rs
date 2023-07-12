@@ -70,32 +70,27 @@ pub async fn auth_submit_flag(
         fk_team_id: Set(Some(team.unwrap().id)),
         ..Default::default()
     };
-    // Check the database to see if there are any challenges with
-    // this name
+    // Check the database to see if there are any challenges with this name
 
     // Get the hacker that made this submission
 
-    // If they aren't on a team, then they can't submit
-    // a flag. Tell them that.
+    // If they aren't on a team, then they can't submit a flag. Tell them that.
 
     // Get the hacker's team
 
-    // Make sure there isn't already a submission for
-    // this challenge by this team that is correct
+    // Make sure there isn't already a submission for this challenge by this
+    // team that is correct
 
-    // If there is already a correct submission, then
-    // tell them that they can't submit another flag for
-    // the challenge
+    // If there is already a correct submission, then tell them that they can't
+    // submit another flag for the challenge
 
-    // Prepare the submission to be saved to the
-    // database
+    // Prepare the submission to be saved to the database
 
     match challenge {
         Some(challenge) => {
             submission.fk_challenge_id = Set(Some(challenge.id));
 
-            // See if this channel's flag matches the
-            // flag they submitted
+            // See if this channel's flag matches the flag they submitted
             if challenge.flag == flag ||
             // TODO: Remove this lol
             flag == "flag"
@@ -135,8 +130,7 @@ pub async fn auth_submit_flag(
             submission.insert(db_clone).await.unwrap();
 
             if solved {
-                // Notify all the online clients about a
-                // scoreboard update
+                // Notify all the online clients about a scoreboard update
                 tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
                     to: ActorTaskTo::BroadcastAll,
                     message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(

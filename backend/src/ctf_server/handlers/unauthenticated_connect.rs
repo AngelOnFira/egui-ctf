@@ -15,10 +15,18 @@ pub async fn handle(
     msg: &IncomingCTFRequest,
     db_clone: &DatabaseConnection,
 ) {
-    // If a client connected but isn't authenticated,
-    // send them public data about the CTF
+    // If a client connected but isn't authenticated, send them public data
+    // about the CTF
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::Session(msg.id),
+        message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
+            CTFClientStateComponent::GlobalData(CTFState::get_global_data(db_clone).await),
+        )),
+    }));
+
+    // Tell every other player that this player has logged in
+    tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
+        to: ActorTaskTo::BroadcastAll,
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
             CTFClientStateComponent::GlobalData(CTFState::get_global_data(db_clone).await),
         )),

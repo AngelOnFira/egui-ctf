@@ -40,8 +40,7 @@ pub async fn handle(
     // See if there is a team with this token
 
     match team {
-        // If no team exists with this token, return an
-        // error message
+        // If no team exists with this token, return an error message
         None => {
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -54,8 +53,7 @@ pub async fn handle(
             return Some(tasks.clone());
         }
         Some(team) => {
-            // Get the hacker associated with this
-            // request
+            // Get the hacker associated with this request
             let hacker: hacker::Model = hacker::Entity::find()
                 .filter(hacker::Column::DiscordId.eq(discord_id))
                 .one(db_clone)
@@ -63,8 +61,7 @@ pub async fn handle(
                 .expect("Failed to get hacker")
                 .unwrap();
 
-            // If this hacker is already on a team,
-            // return an error message
+            // If this hacker is already on a team, return an error message
             if hacker.fk_team_id.is_some() {
                 CTFServer::send_message_associated(
                     NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
@@ -86,8 +83,7 @@ pub async fn handle(
                 .await
                 .expect("Failed to update hacker");
 
-            // Send the hacker a message that they
-            // joined a team
+            // Send the hacker a message that they joined a team
             tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
                 to: ActorTaskTo::Session(msg.id),
                 message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
@@ -107,8 +103,7 @@ pub async fn handle(
                 )),
             }));
 
-            // Send the hacker a notification that they
-            // joined a team
+            // Send the hacker a notification that they joined a team
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                     format!("You joined team {}", team.name),

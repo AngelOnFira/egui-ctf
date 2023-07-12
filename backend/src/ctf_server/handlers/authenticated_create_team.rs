@@ -81,14 +81,11 @@ pub async fn handle(
     }));
     // TODO: Check if this user is already on a team
 
-    // If the team name is empty, return an error
-    // message
+    // If the team name is empty, return an error message
 
-    // Check if a team by this name already exists in
-    // the database
+    // Check if a team by this name already exists in the database
 
-    // If a team by this name already exists, return an
-    // error message
+    // If a team by this name already exists, return an error message
 
     // Create a new team in the database
 
@@ -100,7 +97,6 @@ pub async fn handle(
 
     // Broadcast this new GlobalData to every client
 
-    // Update the client's TeamData on their hacker
-    // joining a team
+    // Update the client's TeamData on their hacker joining a team
     None
 }

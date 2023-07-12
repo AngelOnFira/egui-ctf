@@ -26,8 +26,8 @@ pub async fn handle(
         .await
         .expect("Failed to get token");
 
-    // If we have that token, then we can authenticate this
-    // websocket connection as the user they say they are
+    // If we have that token, then we can authenticate this websocket connection
+    // as the user they say they are
     match token {
         Some(token) => {
             // Get the hacker associated with this token
@@ -36,24 +36,22 @@ pub async fn handle(
                 .await
                 .expect("Failed to get hacker");
 
-            // If we have a hacker, then we can authenticate
-            // this websocket connection as the user they say
-            // they are
+            // If we have a hacker, then we can authenticate this websocket
+            // connection as the user they say they are
             match hacker {
                 Some(hacker) => {
                     update_authenticated_user(tasks, msg, hacker, token, db_clone).await;
                 }
-                // If this token doesn't have a hacker
-                // associated with it, something is wrong.
-                // This is unreachable.
+                // If this token doesn't have a hacker associated with it,
+                // something is wrong. This is unreachable.
                 None => {
                     panic!("Token has no hacker associated with it");
                 }
             }
         }
         None => {
-            // If we don't have that token, then we can't
-            // authenticate this websocket connection
+            // If we don't have that token, then we can't authenticate this
+            // websocket connection
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::IncorrectToken)),
                 recipient_clone.clone(),
@@ -80,29 +78,18 @@ async fn update_authenticated_user(
         )),
     }));
 
-    // Get the updated state from the
-    // database.
+    // Get the updated state from the database.
     let global_data = CTFState::get_global_data(db_clone).await;
 
-    // Tell every other player that this
-    // player has logged in
+    // Tell every other player that this player has logged in
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
-        to: ActorTaskTo::BroadcastAuthenticated,
+        to: ActorTaskTo::BroadcastAll,
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
             CTFClientStateComponent::GlobalData(global_data.clone()),
         )),
     }));
 
-    // Also tell this player
-    tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
-        to: ActorTaskTo::Session(msg.id),
-        message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
-            CTFClientStateComponent::GlobalData(global_data),
-        )),
-    }));
-
-    // Send this client the current game
-    // state
+    // Send this client the current game state
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::Session(msg.id),
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
@@ -117,8 +104,7 @@ async fn update_authenticated_user(
         },
     }));
 
-    // Update the team on their hacker
-    // coming online
+    // Update the team on their hacker coming online
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::Session(msg.id),
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
@@ -128,8 +114,7 @@ async fn update_authenticated_user(
         )),
     }));
 
-    // Update the client on their hacker
-    // coming online
+    // Update the client on their hacker coming online
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::Session(msg.id),
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
@@ -139,8 +124,7 @@ async fn update_authenticated_user(
         )),
     }));
 
-    // Update the client with the current
-    // scoreboard
+    // Update the client with the current scoreboard
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::Session(msg.id),
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(

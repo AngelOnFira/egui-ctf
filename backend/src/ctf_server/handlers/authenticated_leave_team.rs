@@ -40,8 +40,7 @@ pub async fn handle(
         )),
     }));
 
-    // Update the client's TeamData on their hacker
-    // leaving a team
+    // Update the client's TeamData on their hacker leaving a team
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::Session(msg.id),
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(

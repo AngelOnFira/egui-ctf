@@ -110,18 +110,14 @@ impl Handler<Disconnect> for CTFServer {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
-        // Remove this user from the room, and notify others
-        // Find the room that the user is in
+        // Remove this user from the room, and notify others Find the room that
+        // the user is in
 
-        // // TODO: Improve this so we don't have to iterate over the whole hashmap
-        // // a second time. Right now it's so it can send messages in the first,
-        // // then mutate it in the second.
-        // for (_, room) in self.rooms.iter_mut() {
-        //     if room.users.contains(&msg.id) {
-        //         // Remove the user from the room
-        //         room.users.remove(&msg.id);
-        //     }
-        // }
+        // // TODO: Improve this so we don't have to iterate over the whole
+        // hashmap // a second time. Right now it's so it can send messages in
+        // the first, // then mutate it in the second. for (_, room) in
+        // self.rooms.iter_mut() { if room.users.contains(&msg.id) { // Remove
+        //     the user from the room room.users.remove(&msg.id); } }
 
         // Remove this user's session
         println!("User disconnected: {}", msg.id);
@@ -199,9 +195,9 @@ impl Handler<IncomingCTFRequest> for CTFServer {
             // Check if this client is authenticated
             match auth {
                 // If they are unauthenticated, the only message we'll take from
-                // them is a login message.and
-                // TODO: Should this also allow public data to be seen?
-                // TODO: What happens if you try to log in after you
+                // them is a login message.and TODO: Should this also allow
+                // public data to be seen? TODO: What happens if you try to log
+                // in after you
                 Auth::Unauthenticated => match ctf_message {
                     CTFMessage::Login(token) => {
                         handlers::unauthenticated_login::handle(
@@ -247,6 +243,15 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             // If a client wants to log out, deauthenticate
                             // their stream
                             tasks.push(ActorTask::UpdateState(UpdateState::Logout));
+
+                            // TODO: update everyone that this player has gone
+                            // offline
+                            
+                            // return vec![ActorTask::SendNetworkMessage(
+                            //     SendNetworkMessage { to:
+                            //         ActorTaskTo::Session(msg.id), message:
+                            //         NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
+                            //             ClientUpdate::Logout, )), }, )]
                         }
                         CTFMessage::JoinTeam(token) => {
                             if let Some(value) = handlers::authenticated_join_team::handle(

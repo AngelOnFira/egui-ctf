@@ -111,11 +111,8 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
 
             ui.separator();
 
-            // If we're authenticated, show the hacker list
-            if let AuthenticationStateEnum::Authenticated = &ctf_app.authentication_state.state {
-                // Show the hacker list
-                ctf_app.hacker_list.ui(ui, &ctf_app.client_state);
-            }
+            // Show the hacker list
+            ctf_app.hacker_list.ui(ui, &ctf_app.client_state);
         });
 
         // The central panel will have most of the content that will be used
