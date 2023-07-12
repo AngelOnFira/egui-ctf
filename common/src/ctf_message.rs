@@ -241,9 +241,19 @@ impl CTFState {
             }
         }
 
+        // Get all the hackers that aren't on teams
+        let non_hacker_teams = hackers
+            .iter()
+            .filter(|hacker| hacker.fk_team_id.is_none())
+            .map(|hacker| Hacker {
+                name: hacker.username.clone(),
+            })
+            .collect::<Vec<Hacker>>();
+
         // Return the new state
         GlobalData {
             hacker_teams: teams,
+            non_hacker_teams: non_hacker_teams,
             scoreboard,
         }
     }
@@ -290,6 +300,7 @@ pub enum CTFClientStateComponent {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GlobalData {
     pub hacker_teams: Vec<HackerTeam>,
+    pub non_hacker_teams: Vec<Hacker>,
     pub scoreboard: Scoreboard,
 }
 

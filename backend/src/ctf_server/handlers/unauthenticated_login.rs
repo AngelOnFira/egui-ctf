@@ -82,17 +82,22 @@ async fn update_authenticated_user(
 
     // Get the updated state from the
     // database.
-    CTFState::get_global_data(db_clone).await;
+    let global_data = CTFState::get_global_data(db_clone).await;
 
     // Tell every other player that this
     // player has logged in
     tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
         to: ActorTaskTo::BroadcastAuthenticated,
         message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
-            CTFClientStateComponent::GlobalData(GlobalData {
-                hacker_teams: todo!(),
-                scoreboard: todo!(),
-            }),
+            CTFClientStateComponent::GlobalData(global_data.clone()),
+        )),
+    }));
+
+    // Also tell this player
+    tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
+        to: ActorTaskTo::Session(msg.id),
+        message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
+            CTFClientStateComponent::GlobalData(global_data),
         )),
     }));
 

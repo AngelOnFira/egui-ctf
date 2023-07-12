@@ -369,6 +369,10 @@ impl eframe::App for CTFApp {
                                                 state: AuthenticationStateEnum::Authenticated,
                                             };
 
+                                            // Change the screen back to the
+                                            // scoreboard
+                                            self.current_window = CTFUIWindow::Scoreboard;
+
                                             // Flag to save the app state
                                             save_flag = true;
                                         }

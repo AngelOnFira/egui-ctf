@@ -241,6 +241,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             }
                         }
                         CTFMessage::ClientUpdate(_) => todo!(),
+                        // TODO: This can be hit after logout for some reason
                         CTFMessage::Login(_) => todo!(),
                         CTFMessage::Logout => {
                             // If a client wants to log out, deauthenticate

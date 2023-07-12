@@ -52,10 +52,16 @@ impl HackerList {
             // false.
             match &ctf_state.ctf_state.global_data {
                 Some(global_data) => {
+                    // Go through all the hackers on a team
                     for hacker_team in &global_data.hacker_teams {
                         for hacker in &hacker_team.hackers {
                             ui.label(format!("{} [{}]", &hacker.name, hacker_team.name));
                         }
+                    }
+
+                    // Go though all the hackers not on a team
+                    for hacker in &global_data.non_hacker_teams {
+                        ui.label(format!("{} [{}]", &hacker.name, "No team"));
                     }
                 }
                 None => {
