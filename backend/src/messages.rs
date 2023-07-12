@@ -45,7 +45,7 @@ pub struct CTFRoomMessage {
 #[rtype(result = "()")]
 pub enum ActorRequest {}
 
-#[derive(Message)]
+#[derive(Message, Clone)]
 #[rtype(result = "Result<(), MessageError>")]
 pub struct IncomingCTFRequest {
     pub id: ClientId,
