@@ -2,7 +2,7 @@ mod commands;
 
 use std::env;
 
-use commands::{create_interactive_prompt, token};
+use commands::create_interactive_prompt;
 use entity::entities::{hacker, message_component_data};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
@@ -28,15 +28,6 @@ impl EventHandler for Handler {
                 println!("Received command interaction: {:#?}", command);
 
                 let content = match command.data.name.as_str() {
-                    token::COMMAND_NAME => {
-                        token::run(
-                            &command.data.options,
-                            self.db.clone(),
-                            &command.member.as_ref().unwrap().user.id,
-                            &command.member.as_ref().unwrap().user.name,
-                        )
-                        .await
-                    }
                     create_interactive_prompt::COMMAND_NAME => {
                         create_interactive_prompt::run(
                             &command.data.options,
@@ -123,7 +114,7 @@ impl EventHandler for Handler {
                                         .kind(InteractionResponseType::ChannelMessageWithSource)
                                         .interaction_response_data(|message| {
                                             message
-                                                .content(format!("Your token is: {}", token.token))
+                                                .content(format!("Your token is: {}\n\nLog into https://forest-anderson.ca/egui-ctf", token.token))
                                                 .ephemeral(true)
                                         })
                                 })
@@ -149,7 +140,6 @@ impl EventHandler for Handler {
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
-                .create_application_command(|command| token::register(command))
                 .create_application_command(|command| create_interactive_prompt::register(command))
         })
         .await;

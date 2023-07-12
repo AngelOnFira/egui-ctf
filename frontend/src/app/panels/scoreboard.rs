@@ -136,15 +136,26 @@ impl ScoreboardPanel {
 
                     let border = 10.0;
 
+                    let mut minimums = [
+                        0.0 - time_diff / border,
+                        0.0 - max_team_score as f64 / border,
+                    ];
+
+                    let mut maximums = [
+                        time_diff + time_diff / border,
+                        max_team_score as f64 + max_team_score as f64 / border,
+                    ];
+
+                    // If both the minimums and maximums are 0, then we should
+                    // just use bounds of [0.0, 0.0], [100, 100]
+                    if minimums[0] == 0.0 && minimums[1] == 0.0 && maximums[0] == 0.0 && maximums[1] == 0.0 {
+                        minimums = [0.0, 0.0];
+                        maximums = [100.0, 100.0];
+                    }
+
                     plot_ui.set_plot_bounds(PlotBounds::from_min_max(
-                        [
-                            0.0 - time_diff / border,
-                            0.0 - max_team_score as f64 / border,
-                        ],
-                        [
-                            time_diff + time_diff / border,
-                            max_team_score as f64 + max_team_score as f64 / border,
-                        ],
+                        minimums,
+                        maximums,
                     ));
                 });
         }

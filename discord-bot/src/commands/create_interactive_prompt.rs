@@ -47,7 +47,7 @@ pub async fn run(
         .unwrap();
 
     // Return the token to the user
-    "Your token is".to_string()
+    "".to_string()
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {

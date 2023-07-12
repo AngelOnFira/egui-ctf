@@ -230,125 +230,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                     // they are
                                     match hacker {
                                         Some(hacker) => {
-                                            // Tell the client they are authenticated
-                                            tasks.push(ActorTask::SendNetworkMessage(
-                                                SendNetworkMessage {
-                                                    to: ActorTaskTo::Session(msg.id),
-                                                    message: NetworkMessage::CTFMessage(
-                                                        CTFMessage::ClientUpdate(
-                                                            ClientUpdate::Authenticated {
-                                                                discord_username: hacker
-                                                                    .username
-                                                                    .clone(),
-                                                                valid_token: token.token.clone(),
-                                                            },
-                                                        ),
-                                                    ),
-                                                },
-                                            ));
-
-                                            // Get the updated state from the
-                                            // database.
-                                            CTFState::get_global_data(&db_clone).await;
-
-                                            // TODO:
-                                            // // Tell every other player that this
-                                            // // player has logged in
-                                            // tasks.push(ActorTask::SendNetworkMessage(
-                                            //     SendNetworkMessage {
-                                            //         to: ActorTaskTo::BroadcastAuthenticated,
-                                            //         message: NetworkMessage::CTFMessage(
-                                            //             CTFMessage::ServerUpdate(
-                                            //                 ServerUpdate::PlayerLogin {
-                                            //                     discord_username: hacker
-                                            //                         .username
-                                            //                         .clone(),
-                                            //                 },
-                                            //             ),
-                                            //         ),
-                                            //     },
-                                            // ));
-
-                                            // Send this client the current game
-                                            // state
-                                            tasks.push(ActorTask::SendNetworkMessage(
-                                                SendNetworkMessage {
-                                                    to: ActorTaskTo::Session(msg.id),
-                                                    message: NetworkMessage::CTFMessage(
-                                                        CTFMessage::CTFClientStateComponent(
-                                                            CTFClientStateComponent::GameData(
-                                                                CTFState::get_game_data(&db_clone)
-                                                                    .await,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                },
-                                            ));
-
-                                            // Update this session's auth state
-                                            tasks.push(ActorTask::UpdateState(
-                                                UpdateState::SessionAuth {
-                                                    auth: Auth::Hacker {
-                                                        discord_id: hacker.discord_id,
-                                                    },
-                                                },
-                                            ));
-
-                                            // Update the team on their hacker
-                                            // coming online
-                                            tasks.push(ActorTask::SendNetworkMessage(
-                                                SendNetworkMessage {
-                                                    to: ActorTaskTo::Session(msg.id),
-                                                    message: NetworkMessage::CTFMessage(
-                                                        CTFMessage::CTFClientStateComponent(
-                                                            CTFClientStateComponent::TeamData(
-                                                                CTFState::get_hacker_team_data(
-                                                                    hacker.discord_id,
-                                                                    &db_clone,
-                                                                )
-                                                                .await,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                },
-                                            ));
-
-                                            // Update the client on their hacker
-                                            // coming online
-                                            tasks.push(ActorTask::SendNetworkMessage(
-                                                SendNetworkMessage {
-                                                    to: ActorTaskTo::Session(msg.id),
-                                                    message: NetworkMessage::CTFMessage(
-                                                        CTFMessage::CTFClientStateComponent(
-                                                            CTFClientStateComponent::ClientData(
-                                                                CTFState::get_hacker_client_data(
-                                                                    hacker.discord_id,
-                                                                    &db_clone,
-                                                                )
-                                                                .await,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                },
-                                            ));
-
-                                            // Update the client with the current
-                                            // scoreboard
-                                            tasks.push(ActorTask::SendNetworkMessage(
-                                                SendNetworkMessage {
-                                                    to: ActorTaskTo::Session(msg.id),
-                                                    message: NetworkMessage::CTFMessage(
-                                                        CTFMessage::CTFClientStateComponent(
-                                                            CTFClientStateComponent::GlobalData(
-                                                                CTFState::get_global_data(
-                                                                    &db_clone,
-                                                                )
-                                                                .await,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                },
-                                            ));
+                                            update_authenticated_user(&mut tasks, &msg, hacker, token, &db_clone).await;
                                         }
                                         // If this token doesn't have a hacker
                                         // associated with it, something is wrong.
@@ -836,6 +718,127 @@ impl Handler<IncomingCTFRequest> for CTFServer {
         // Return the future to be run
         Box::pin(fut)
     }
+}
+
+async fn update_authenticated_user(tasks: &mut Vec<ActorTask>, msg: &IncomingCTFRequest, hacker: hacker::Model, token: token::Model, db_clone: &DatabaseConnection) {
+    // Tell the client they are authenticated
+    tasks.push(ActorTask::SendNetworkMessage(
+        SendNetworkMessage {
+            to: ActorTaskTo::Session(msg.id),
+            message: NetworkMessage::CTFMessage(
+                CTFMessage::ClientUpdate(
+                    ClientUpdate::Authenticated {
+                        discord_username: hacker
+                            .username
+                            .clone(),
+                        valid_token: token.token.clone(),
+                    },
+                ),
+            ),
+        },
+    ));
+
+    // Get the updated state from the
+    // database.
+    CTFState::get_global_data(db_clone).await;
+
+    // Tell every other player that this
+    // player has logged in
+    tasks.push(ActorTask::SendNetworkMessage(
+        SendNetworkMessage {
+            to: ActorTaskTo::BroadcastAuthenticated,
+            message: NetworkMessage::CTFMessage(
+                CTFMessage::ServerUpdate(
+                    ServerUpdate::PlayerLogin {
+                        discord_username: hacker
+                            .username
+                            .clone(),
+                    },
+                ),
+            ),
+        },
+    ));
+
+    // Send this client the current game
+    // state
+    tasks.push(ActorTask::SendNetworkMessage(
+        SendNetworkMessage {
+            to: ActorTaskTo::Session(msg.id),
+            message: NetworkMessage::CTFMessage(
+                CTFMessage::CTFClientStateComponent(
+                    CTFClientStateComponent::GameData(
+                        CTFState::get_game_data(db_clone)
+                            .await,
+                    ),
+                ),
+            ),
+        },
+    ));
+
+    // Update this session's auth state
+    tasks.push(ActorTask::UpdateState(
+        UpdateState::SessionAuth {
+            auth: Auth::Hacker {
+                discord_id: hacker.discord_id,
+            },
+        },
+    ));
+
+    // Update the team on their hacker
+    // coming online
+    tasks.push(ActorTask::SendNetworkMessage(
+        SendNetworkMessage {
+            to: ActorTaskTo::Session(msg.id),
+            message: NetworkMessage::CTFMessage(
+                CTFMessage::CTFClientStateComponent(
+                    CTFClientStateComponent::TeamData(
+                        CTFState::get_hacker_team_data(
+                            hacker.discord_id,
+                            db_clone,
+                        )
+                        .await,
+                    ),
+                ),
+            ),
+        },
+    ));
+
+    // Update the client on their hacker
+    // coming online
+    tasks.push(ActorTask::SendNetworkMessage(
+        SendNetworkMessage {
+            to: ActorTaskTo::Session(msg.id),
+            message: NetworkMessage::CTFMessage(
+                CTFMessage::CTFClientStateComponent(
+                    CTFClientStateComponent::ClientData(
+                        CTFState::get_hacker_client_data(
+                            hacker.discord_id,
+                            db_clone,
+                        )
+                        .await,
+                    ),
+                ),
+            ),
+        },
+    ));
+
+    // Update the client with the current
+    // scoreboard
+    tasks.push(ActorTask::SendNetworkMessage(
+        SendNetworkMessage {
+            to: ActorTaskTo::Session(msg.id),
+            message: NetworkMessage::CTFMessage(
+                CTFMessage::CTFClientStateComponent(
+                    CTFClientStateComponent::GlobalData(
+                        CTFState::get_global_data(
+                            db_clone,
+                        )
+                        .await,
+                    ),
+                ),
+            ),
+        },
+    ));
 }
 
 /// Run any updates of state change if needed Any message sending needs to be
