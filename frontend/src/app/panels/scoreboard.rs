@@ -148,15 +148,16 @@ impl ScoreboardPanel {
 
                     // If both the minimums and maximums are 0, then we should
                     // just use bounds of [0.0, 0.0], [100, 100]
-                    if minimums[0] == 0.0 && minimums[1] == 0.0 && maximums[0] == 0.0 && maximums[1] == 0.0 {
+                    if minimums[0] == 0.0
+                        && minimums[1] == 0.0
+                        && maximums[0] == 0.0
+                        && maximums[1] == 0.0
+                    {
                         minimums = [0.0, 0.0];
                         maximums = [100.0, 100.0];
                     }
 
-                    plot_ui.set_plot_bounds(PlotBounds::from_min_max(
-                        minimums,
-                        maximums,
-                    ));
+                    plot_ui.set_plot_bounds(PlotBounds::from_min_max(minimums, maximums));
                 });
         }
     }

@@ -1,30 +1,16 @@
 use crate::{
     ctf_server::{ActorTask, ActorTaskTo, CTFServer, SendNetworkMessage},
-    messages::{
-        CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
-    },
+    messages::WsActorMessage,
 };
-use actix::{
-    prelude::{Actor, Context, Handler, Recipient},
-    ActorFutureExt, AsyncContext, ResponseActFuture,
-};
+use actix::prelude::Recipient;
 use common::{
-    ctf_message::{
-        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, DiscordClientId,
-        GameData, TeamData,
-    },
-    ClientId, NetworkMessage,
+    ctf_message::{CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
+    NetworkMessage,
 };
-use entity::entities::{challenge, hacker, submission, team, token};
+use entity::entities::{challenge, hacker, submission, team};
 
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
-use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
-use uuid::Uuid;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub async fn auth_submit_flag(
     challenge_name: String,

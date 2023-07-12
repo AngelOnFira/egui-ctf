@@ -1,30 +1,15 @@
 use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, CTFServer, SendNetworkMessage},
-    messages::{
-        CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
-    },
+    ctf_server::{ActorTask, ActorTaskTo, SendNetworkMessage},
+    messages::IncomingCTFRequest,
 };
-use actix::{
-    prelude::{Actor, Context, Handler, Recipient},
-    ActorFutureExt, AsyncContext, ResponseActFuture,
-};
-use common::{
-    ctf_message::{
-        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, DiscordClientId,
-        GameData, TeamData,
-    },
-    ClientId, NetworkMessage,
-};
-use entity::entities::{challenge, hacker, submission, team, token};
 
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
+use common::{
+    ctf_message::{CTFClientStateComponent, CTFMessage, CTFState},
+    NetworkMessage,
 };
-use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
-use uuid::Uuid;
+use entity::entities::hacker;
+
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 
 pub async fn handle(
     discord_id: i64,

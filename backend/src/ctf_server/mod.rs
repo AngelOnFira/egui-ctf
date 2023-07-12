@@ -6,21 +6,12 @@ use actix::{
     ActorFutureExt, AsyncContext, ResponseActFuture,
 };
 use common::{
-    ctf_message::{
-        CTFClientStateComponent, CTFMessage, CTFState, ClientData, ClientUpdate, DiscordClientId,
-        GameData, GlobalData, TeamData,
-    },
+    ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
     ClientId, NetworkMessage,
 };
-use entity::entities::{challenge, hacker, submission, team, token};
 
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
-use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
+use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
 pub mod handlers;
@@ -49,7 +40,7 @@ impl Session {
 }
 
 #[derive(Debug, Clone)]
-enum Auth {
+pub enum Auth {
     Unauthenticated,
     Hacker { discord_id: DiscordClientId },
 }
@@ -171,7 +162,7 @@ pub enum ActorTask {
 
 #[derive(Debug, Clone)]
 pub enum UpdateState {
-    SessionAuth { pub auth: Auth },
+    SessionAuth { auth: Auth },
     Logout,
 }
 
