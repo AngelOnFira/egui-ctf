@@ -26,7 +26,7 @@ impl ScoreboardPanel {
                 .scoreboard
                 .teams
                 .values()
-                .filter_map(|solves| solves.iter().map(|s| s.time).min())
+                .filter_map(|solves| solves.iter().map(|s| s.time_millis).min())
                 .min()
                 .unwrap_or(0);
 
@@ -35,7 +35,7 @@ impl ScoreboardPanel {
                 .scoreboard
                 .teams
                 .values()
-                .filter_map(|solves| solves.iter().map(|s| s.time).max())
+                .filter_map(|solves| solves.iter().map(|s| s.time_millis).max())
                 .max()
                 .unwrap_or(0);
 
@@ -97,11 +97,11 @@ impl ScoreboardPanel {
                         plot_ui.line(Line::new(
                             solves
                                 .iter()
-                                .sorted_by(|a, b| a.time.cmp(&b.time))
+                                .sorted_by(|a, b| a.time_millis.cmp(&b.time_millis))
                                 .fold((0, vec![[0.0, 0.0]]), |mut acc, s| {
                                     acc.0 += s.points;
                                     acc.1.push([
-                                        (s.time - lowest_time) as f64 / 1000.0 / 60.0,
+                                        (s.time_millis - lowest_time) as f64 / 1000.0 / 60.0,
                                         acc.0 as f64,
                                     ]);
                                     acc
@@ -114,11 +114,11 @@ impl ScoreboardPanel {
                             Points::new(
                                 solves
                                     .iter()
-                                    .sorted_by(|a, b| a.time.cmp(&b.time))
+                                    .sorted_by(|a, b| a.time_millis.cmp(&b.time_millis))
                                     .fold((0, vec![[0.0, 0.0]]), |mut acc, s| {
                                         acc.0 += s.points;
                                         acc.1.push([
-                                            (s.time - lowest_time) as f64 / 1000.0 / 60.0,
+                                            (s.time_millis - lowest_time) as f64 / 1000.0 / 60.0,
                                             acc.0 as f64,
                                         ]);
                                         acc

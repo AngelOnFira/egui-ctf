@@ -49,7 +49,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Submission::Flag).string().not_null())
-                    .col(ColumnDef::new(Submission::Time).string().not_null())
+                    .col(ColumnDef::new(Submission::Time).date_time().not_null())
                     .col(ColumnDef::new(Submission::Correct).boolean().not_null())
                     .col(ColumnDef::new(Submission::FkHackerId).big_integer().null())
                     .foreign_key(

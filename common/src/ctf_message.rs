@@ -226,7 +226,7 @@ impl CTFState {
                     .or_insert(Vec::new())
                     .push(Solve {
                         points: challenge.points as u32,
-                        time: solve.time.parse().unwrap(),
+                        time_millis: solve.time.timestamp_millis() as u128,
                     });
             }
         }
@@ -307,7 +307,7 @@ pub struct Scoreboard {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Solve {
     pub points: u32,
-    pub time: u128,
+    pub time_millis: u128,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

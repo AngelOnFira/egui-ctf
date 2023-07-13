@@ -3,6 +3,7 @@ use crate::{
     messages::WsActorMessage,
 };
 use actix::prelude::Recipient;
+use chrono::NaiveDateTime;
 use common::{
     ctf_message::{CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
     NetworkMessage,
@@ -25,10 +26,12 @@ pub async fn auth_submit_flag(
         .one(db_clone)
         .await
         .expect("Failed to get challenge");
+
     let hacker = hacker::Entity::find_by_id(discord_id)
         .one(db_clone)
         .await
         .expect("Failed to get hacker");
+
     if hacker.as_ref().unwrap().fk_team_id.is_none() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -38,10 +41,12 @@ pub async fn auth_submit_flag(
         );
         return Some(tasks.clone());
     }
+
     let team = team::Entity::find_by_id(hacker.as_ref().unwrap().fk_team_id.unwrap())
         .one(db_clone)
         .await
         .expect("Failed to get team");
+
     let existing_correct_submission = submission::Entity::find()
         .filter(submission::Column::FkChallengeId.eq(challenge.as_ref().unwrap().id))
         .filter(submission::Column::FkTeamId.eq(team.as_ref().unwrap().id))
@@ -49,6 +54,7 @@ pub async fn auth_submit_flag(
         .one(db_clone)
         .await
         .expect("Failed to get existing correct submission");
+
     if existing_correct_submission.is_some() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -58,14 +64,17 @@ pub async fn auth_submit_flag(
         );
         return Some(tasks.clone());
     }
+
+    let now: std::time::Duration = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap();
+
     let mut submission = submission::ActiveModel {
         flag: Set(flag.clone()),
         // Get the current time as a string
-        time: Set(SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis()
-            .to_string()),
+        time: Set(
+            NaiveDateTime::from_timestamp_opt(now.as_secs() as i64, now.subsec_nanos()).unwrap(),
+        ),
         fk_hacker_id: Set(Some(hacker.unwrap().discord_id)),
         fk_team_id: Set(Some(team.unwrap().id)),
         ..Default::default()

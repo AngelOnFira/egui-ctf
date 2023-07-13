@@ -72,7 +72,7 @@ impl Actor for CTFServer {
         let ai_teams = AITeams::new();
         let arbiter = Arbiter::new();
         let database_clone = self.db.clone();
-        ctx.run_interval(Duration::from_secs(5), move |_act, _ctx| {
+        ctx.run_interval(Duration::from_secs(1), move |_act, _ctx| {
             let ai_teams = ai_teams.clone();
             let database_clone = database_clone.clone();
             arbiter.spawn(async move {

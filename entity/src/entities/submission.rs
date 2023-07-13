@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub flag: String,
-    pub time: String,
+    pub time: DateTime,
     pub correct: bool,
     pub fk_hacker_id: Option<i64>,
     pub fk_team_id: Option<i32>,
