@@ -932,9 +932,9 @@ dependencies = [
 
 [[package]]
 name = "catppuccin-egui"
-version = "2.0.2"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a857c0fb69063d858d19972e04c4eee1e3953a6555d121509e917b237a6c30c4"
+checksum = "bce23f80f5cd1f392a9b2585fd1815dfa1c3ce9ad52261dda57507f034cb31f9"
 dependencies = [
  "egui",
 ]

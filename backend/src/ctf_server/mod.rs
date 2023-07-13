@@ -1,10 +1,7 @@
 use crate::messages::{
     CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
 };
-use actix::{
-    prelude::{Actor, Context, Handler, Recipient},
-    ActorFutureExt, AsyncContext, ResponseActFuture,
-};
+use actix::prelude::*;
 use common::{
     ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
     ClientId, NetworkMessage,
@@ -14,6 +11,9 @@ use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
+use self::ai_teams::AITeams;
+
+pub mod ai_teams;
 pub mod handlers;
 
 pub type WsClientSocket = Recipient<WsActorMessage>;
@@ -61,13 +61,23 @@ impl CTFServer {
 impl Actor for CTFServer {
     type Context = Context<Self>;
 
-    // We'll do a few things here. We're going to check once a second if more
-    // than 2 players are in the game server without being in the room. If so,
-    // we'll start a new game for them.
     fn started(&mut self, ctx: &mut Self::Context) {
+        // Once a second, print the number of players in the game server
         ctx.run_interval(Duration::from_secs(1), |act, _ctx| {
             // Print the number of players in the game server
             println!("{} players in the game server", act.sessions.len());
+        });
+
+        // We'll also start a thread to randomly get teams to solve challenges
+        let ai_teams = AITeams::new();
+        let arbiter = Arbiter::new();
+        let database_clone = self.db.clone();
+        ctx.run_interval(Duration::from_secs(5), move |_act, _ctx| {
+            let ai_teams = ai_teams.clone();
+            let database_clone = database_clone.clone();
+            arbiter.spawn(async move {
+                ai_teams.run(&database_clone).await;
+            });
         });
     }
 }
@@ -246,7 +256,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
                             // TODO: update everyone that this player has gone
                             // offline
-                            
+
                             // return vec![ActorTask::SendNetworkMessage(
                             //     SendNetworkMessage { to:
                             //         ActorTaskTo::Session(msg.id), message:

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use entity::entities::{challenge, hacker, submission, team};
+use entity::{
+    entities::{challenge, hacker, submission, team},
+    helpers::get_team_solved_challenges,
+};
 use iter_tools::Itertools;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -193,7 +196,7 @@ impl CTFState {
         // Get the scoreboard data
 
         // Create a map from team id to team name
-        let team_names = database_teams
+        let team_names: HashMap<String, i32> = database_teams
             .clone()
             .iter()
             .map(|team| (team.name.clone(), team.id))
@@ -210,26 +213,13 @@ impl CTFState {
             teams: HashMap::new(),
         };
         for team in teams.clone() {
-            // Get all the solves this team has made
-            let solves = submission::Entity::find()
-                .filter(submission::Column::Correct.eq(true))
-                .filter(submission::Column::FkTeamId.eq(*team_names.get(&team.name).unwrap()))
-                .all(db)
-                .await
-                .expect("Failed to get all submissions");
+            // Get all the challges this team has solved
+            let challenges: Vec<(submission::Model, challenge::Model)> =
+                get_team_solved_challenges(db, *team_names.get(&team.name).unwrap()).await;
 
-            for solve in solves {
+            for (solve, challenge) in challenges {
                 // TODO: Check that we're not giving multiple points for the
                 // same challenge
-
-                // Get the challenge from the database
-                let challenge = challenge::Entity::find()
-                    .filter(challenge::Column::Id.eq(solve.fk_challenge_id))
-                    .one(db)
-                    .await
-                    .expect("Failed to get challenge")
-                    .unwrap();
-
                 scoreboard
                     .teams
                     .entry(team.name.clone())
