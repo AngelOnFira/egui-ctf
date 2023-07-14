@@ -15,6 +15,9 @@ mod ws_conn;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Reset the database /shrug
+    Migrator::fresh(&ctf_server.db).await.unwrap();
+    
     // Try connecting to the database again once every 5 seconds if it fails
     let ctf_server = {
         loop {
@@ -31,7 +34,8 @@ async fn main() -> std::io::Result<()> {
     };
 
     // Run database migrations
-    Migrator::up(&ctf_server.db, None).await.unwrap();
+    // Migrator::up(&ctf_server.db, None).await.unwrap();
+
 
     let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
 
