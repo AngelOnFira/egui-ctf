@@ -114,13 +114,21 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
             // TODO: Add these settings for admin/debug only
             ui.separator();
 
-            // Reset database button
+            // Reset database
             if ui.button("Reset DB").clicked() {
                 // Send a message to the backend to wipe the db and rerun
                 // migrations
                 ctf_app
                     .connection_state
                     .send_message(NetworkMessage::CTFMessage(CTFMessage::ResetDB));
+            }
+
+            // Spawn 1000 teams
+            if ui.button("Spawn 1000 teams").clicked() {
+                // Send a message to the backend to spawn 1000 teams
+                ctf_app
+                    .connection_state
+                    .send_message(NetworkMessage::CTFMessage(CTFMessage::SpawnTeams));
             }
 
             ui.separator();

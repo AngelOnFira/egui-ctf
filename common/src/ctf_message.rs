@@ -36,6 +36,7 @@ pub enum CTFMessage {
     LeaveTeam,
     /// Debug messages
     ResetDB,
+    SpawnTeams,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

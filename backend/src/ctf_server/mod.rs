@@ -7,8 +7,9 @@ use common::{
     ClientId, NetworkMessage,
 };
 
+use entity::entities::team;
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
@@ -301,6 +302,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                         CTFMessage::Connect => todo!(),
                         CTFMessage::ResetDB => todo!(),
+                        CTFMessage::SpawnTeams => todo!(),
                     }
                 }
             }
@@ -311,6 +313,18 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                     println!("Resetting database");
                     // Rerun the migrations on the database
                     Migrator::fresh(&db_clone_2).await.unwrap();
+                }
+                CTFMessage::SpawnTeams => {
+                    println!("Spawning teams");
+                    // Spawn 1000 teams
+                    team::Entity::insert_many((0..1000).into_iter().map(|i| team::ActiveModel {
+                        name: Set(format!("Team {}", i)),
+                        join_token: Set("".to_string()),
+                        ..Default::default()
+                    }))
+                    .exec(&db_clone_2)
+                    .await
+                    .unwrap();
                 }
                 _ => (),
             }
