@@ -37,6 +37,7 @@ pub enum CTFMessage {
     /// Debug messages
     ResetDB,
     SpawnTeams,
+    CloneRepo,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

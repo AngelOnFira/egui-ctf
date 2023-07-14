@@ -123,6 +123,14 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                     .send_message(NetworkMessage::CTFMessage(CTFMessage::ResetDB));
             }
 
+            // Clone the repo
+            if ui.button("Clone Repo").clicked() {
+                // Send a message to the backend to clone the repo
+                ctf_app
+                    .connection_state
+                    .send_message(NetworkMessage::CTFMessage(CTFMessage::CloneRepo));
+            }
+
             // Spawn 1000 teams
             if ui.button("Spawn 1000 teams").clicked() {
                 // Send a message to the backend to spawn 1000 teams

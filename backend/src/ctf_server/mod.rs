@@ -1,6 +1,6 @@
-use crate::messages::{
+use crate::{messages::{
     CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
-};
+}, repo::Repo};
 use actix::prelude::*;
 use common::{
     ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
@@ -303,6 +303,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         CTFMessage::Connect => todo!(),
                         CTFMessage::ResetDB => todo!(),
                         CTFMessage::SpawnTeams => todo!(),
+                        CTFMessage::CloneRepo => todo!(),
                     }
                 }
             }
@@ -325,6 +326,16 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                     .exec(&db_clone_2)
                     .await
                     .unwrap();
+                }
+                CTFMessage::CloneRepo => {
+                    // Download the repo
+                    Repo::clone_repo();
+
+                    // Load the repo from the repository
+                    let repo = Repo::parse_repo();
+
+                    // Load all the challenges found into the database
+                    repo.update_database().await;
                 }
                 _ => (),
             }

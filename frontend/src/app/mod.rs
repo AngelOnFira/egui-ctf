@@ -401,6 +401,7 @@ impl eframe::App for CTFApp {
                                     | CTFMessage::Logout
                                     | CTFMessage::Connect
                                     | CTFMessage::SpawnTeams
+                                    | CTFMessage::CloneRepo
                                     | CTFMessage::ResetDB
                                     | CTFMessage::LeaveTeam => unreachable!(),
                                 }
