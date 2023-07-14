@@ -1,12 +1,8 @@
-FROM rust:1 as builder
+FROM ghcr.io/angelonfira/egui-ctf/ctf-discord-bot-base:latest as builder
 
 WORKDIR /app
 
 COPY . /app
-
-# Install ld
-RUN apt-get update && apt-get install -y \
-    lld
     
 RUN cd discord-bot; cargo build --release
 
