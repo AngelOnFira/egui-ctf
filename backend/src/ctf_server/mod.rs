@@ -318,7 +318,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 CTFMessage::SpawnTeams => {
                     println!("Spawning teams");
                     // Spawn 1000 teams
-                    team::Entity::insert_many((0..1000).into_iter().map(|i| team::ActiveModel {
+                    team::Entity::insert_many((0..10).into_iter().map(|i| team::ActiveModel {
                         name: Set(format!("Team {}", i)),
                         join_token: Set("".to_string()),
                         ..Default::default()
