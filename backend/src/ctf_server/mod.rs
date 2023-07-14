@@ -301,9 +301,9 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             .await;
                         }
                         CTFMessage::Connect => todo!(),
-                        CTFMessage::ResetDB => todo!(),
-                        CTFMessage::SpawnTeams => todo!(),
-                        CTFMessage::CloneRepo => todo!(),
+                        CTFMessage::ResetDB => (),
+                        CTFMessage::SpawnTeams => (),
+                        CTFMessage::CloneRepo => (),
                     }
                 }
             }
