@@ -7,6 +7,7 @@ use common::{
     ClientId, NetworkMessage,
 };
 
+use migration::{Migrator, MigratorTrait};
 use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
@@ -191,7 +192,8 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
     fn handle(&mut self, msg: IncomingCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         // Items to be moved into closure
-        let db_clone = self.db.clone();
+        let db_clone_1 = self.db.clone();
+        let db_clone_2 = self.db.clone();
         let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
         let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
         let ctf_message = msg.ctf_message.clone();
@@ -208,11 +210,11 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 // them is a login message.and TODO: Should this also allow
                 // public data to be seen? TODO: What happens if you try to log
                 // in after you
-                Auth::Unauthenticated => match ctf_message {
+                Auth::Unauthenticated => match ctf_message.clone() {
                     CTFMessage::Login(token) => {
                         handlers::unauthenticated_login::handle(
                             token,
-                            &db_clone,
+                            &db_clone_1,
                             &mut tasks,
                             &msg,
                             &recipient_clone,
@@ -220,13 +222,13 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         .await;
                     }
                     CTFMessage::Connect => {
-                        handlers::unauthenticated_connect::handle(&mut tasks, &msg, &db_clone)
+                        handlers::unauthenticated_connect::handle(&mut tasks, &msg, &db_clone_1)
                             .await;
                     }
                     _ => (),
                 },
                 Auth::Hacker { discord_id } => {
-                    match ctf_message {
+                    match ctf_message.clone() {
                         CTFMessage::CTFClientStateComponent(_) => todo!(),
                         CTFMessage::SubmitFlag {
                             challenge_name,
@@ -235,7 +237,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             if let Some(value) =
                                 handlers::authenticated_submit_flag::auth_submit_flag(
                                     challenge_name,
-                                    &db_clone,
+                                    &db_clone_1,
                                     discord_id,
                                     &recipient_clone,
                                     &mut tasks,
@@ -268,7 +270,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 token,
                                 &recipient_clone,
                                 &mut tasks,
-                                &db_clone,
+                                &db_clone_1,
                                 discord_id,
                                 &msg,
                             )
@@ -282,7 +284,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                                 team_name,
                                 recipient_clone,
                                 &mut tasks,
-                                &db_clone,
+                                &db_clone_1,
                                 discord_id,
                                 &msg,
                             )
@@ -293,13 +295,24 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                         CTFMessage::LeaveTeam => {
                             handlers::authenticated_leave_team::handle(
-                                discord_id, db_clone, &mut tasks, &msg,
+                                discord_id, db_clone_1, &mut tasks, &msg,
                             )
                             .await;
                         }
                         CTFMessage::Connect => todo!(),
+                        CTFMessage::ResetDB => todo!(),
                     }
                 }
+            }
+
+            // Things that don't matter if you're logged in or not
+            match ctf_message {
+                CTFMessage::ResetDB => {
+                    println!("Resetting database");
+                    // Rerun the migrations on the database
+                    Migrator::fresh(&db_clone_2).await.unwrap();
+                }
+                _ => (),
             }
 
             tasks

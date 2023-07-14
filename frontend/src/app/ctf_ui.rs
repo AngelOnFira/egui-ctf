@@ -1,4 +1,6 @@
+use common::ctf_message::CTFMessage;
 use common::ctf_message::TeamData;
+use common::NetworkMessage;
 use eframe::App;
 use egui::FontFamily::Proportional;
 use egui::FontId;
@@ -104,10 +106,22 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
                 .selected_text(format!("{:?}", ctf_app.ui_theme))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Frappe, "Frappe");
-                    ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Macchiato, "Macchiato");
+                    // ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Macchiato, "Macchiato");
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Mocha, "Mocha");
                     ui.selectable_value(&mut ctf_app.ui_theme, UiTheme::Latte, "Latte");
                 });
+
+            // TODO: Add these settings for admin/debug only
+            ui.separator();
+
+            // Reset database button
+            if ui.button("Reset DB").clicked() {
+                // Send a message to the backend to wipe the db and rerun
+                // migrations
+                ctf_app
+                    .connection_state
+                    .send_message(NetworkMessage::CTFMessage(CTFMessage::ResetDB));
+            }
 
             ui.separator();
 

@@ -35,7 +35,12 @@ async fn main() -> std::io::Result<()> {
 
     let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
 
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
+    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
+    // start an env logger like above, but ignore sqlx queries
+
+    env_logger::builder()
+        .filter_module("sqlx", log::LevelFilter::Off)
+        .init();
 
     // Download the repo
     Repo::clone_repo();

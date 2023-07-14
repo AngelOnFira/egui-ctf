@@ -34,6 +34,8 @@ pub enum CTFMessage {
     CreateTeam(String),
     /// Player leaving their team
     LeaveTeam,
+    /// Debug messages
+    ResetDB,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

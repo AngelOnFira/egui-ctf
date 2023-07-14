@@ -400,6 +400,7 @@ impl eframe::App for CTFApp {
                                     | CTFMessage::Login(_)
                                     | CTFMessage::Logout
                                     | CTFMessage::Connect
+                                    | CTFMessage::ResetDB
                                     | CTFMessage::LeaveTeam => unreachable!(),
                                 }
                             }
