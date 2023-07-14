@@ -30,7 +30,7 @@ impl AITeams {
             // Chance is how many seconds it should take on average to solve a challenge
             let seconds_for_chance = 10.0;
 
-            if rand::random::<f32>() < (1.0 / seconds_for_chance) {
+            if rand::random::<f32>() < ((1.0 * 5.0) / seconds_for_chance) {
                 // Find a challenge that this team hasn't solved. Do this by
                 // getting a list of all the challenges they have unsolved, and
                 // pick one of them at random.
