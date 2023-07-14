@@ -1,8 +1,5 @@
-use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, CTFServer, HandleData, SendNetworkMessage},
-    messages::WsActorMessage,
-};
-use actix::prelude::Recipient;
+use crate::ctf_server::{ActorTask, ActorTaskTo, CTFServer, HandleData, SendNetworkMessage};
+
 use chrono::NaiveDateTime;
 use common::{
     ctf_message::{CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
@@ -10,8 +7,7 @@ use common::{
 };
 use entity::entities::{challenge, hacker, submission, team};
 
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
-use std::time::{SystemTime, UNIX_EPOCH};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 pub async fn handle<'a>(
     handle_data: &'a mut HandleData<'a>,

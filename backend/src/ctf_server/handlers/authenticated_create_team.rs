@@ -1,15 +1,12 @@
-use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, CTFServer, HandleData, SendNetworkMessage},
-    messages::{IncomingCTFRequest, WsActorMessage},
-};
-use actix::prelude::Recipient;
+use crate::ctf_server::{ActorTask, ActorTaskTo, CTFServer, HandleData, SendNetworkMessage};
+
 use common::{
     ctf_message::{CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
     NetworkMessage,
 };
 use entity::entities::{hacker, team};
 
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use uuid::Uuid;
 

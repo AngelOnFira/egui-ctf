@@ -247,7 +247,7 @@ impl CTFState {
         // Return the new state
         GlobalData {
             hacker_teams: teams,
-            non_hacker_teams: non_hacker_teams,
+            non_hacker_teams,
             scoreboard,
         }
     }

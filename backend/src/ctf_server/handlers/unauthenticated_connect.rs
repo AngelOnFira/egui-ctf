@@ -1,14 +1,9 @@
-use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, HandleData, SendNetworkMessage},
-    messages::IncomingCTFRequest,
-};
+use crate::ctf_server::{ActorTask, ActorTaskTo, HandleData, SendNetworkMessage};
 
 use common::{
     ctf_message::{CTFClientStateComponent, CTFMessage, CTFState},
     NetworkMessage,
 };
-
-use sea_orm::DatabaseConnection;
 
 pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>) {
     // If a client connected but isn't authenticated, send them public data

@@ -1,7 +1,4 @@
-use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, HandleData, SendNetworkMessage},
-    messages::IncomingCTFRequest,
-};
+use crate::ctf_server::{ActorTask, ActorTaskTo, HandleData, SendNetworkMessage};
 
 use common::{
     ctf_message::{CTFClientStateComponent, CTFMessage, CTFState},
@@ -9,7 +6,7 @@ use common::{
 };
 use entity::entities::hacker;
 
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 
 pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, discord_id: i64) {
     // check that this hacker is on a team

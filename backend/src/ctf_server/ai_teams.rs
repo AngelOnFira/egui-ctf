@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use chrono::NaiveDateTime;
 use entity::{
     entities::{submission, team},

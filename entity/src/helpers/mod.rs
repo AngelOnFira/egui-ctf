@@ -47,14 +47,13 @@ pub async fn get_team_unsolved_challenges(
         get_team_solved_challenges(db, team_id).await;
 
     // Get all the challenges this team hasn't solved
-    let challenges = challenges
+
+    challenges
         .into_iter()
         .filter(|challenge| {
             !solved_challenges
                 .iter()
                 .any(|(_, solved_challenge)| solved_challenge.id == challenge.id)
         })
-        .collect::<Vec<challenge::Model>>();
-
-    challenges
+        .collect::<Vec<challenge::Model>>()
 }

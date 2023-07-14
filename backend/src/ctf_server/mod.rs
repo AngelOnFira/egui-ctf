@@ -210,7 +210,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
         let ctf_message = msg.ctf_message.clone();
 
         let msg_clone_1 = msg.clone();
-        let msg_clone_2 = msg.clone();
+        let msg_clone_2 = msg;
 
         let fut = async move {
             // Queue of tasks for the actor to take
@@ -220,7 +220,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 db_clone: db_clone_1.clone(),
                 tasks: &mut tasks,
                 msg: &msg_clone_1,
-                recipient_clone: recipient_clone,
+                recipient_clone,
             };
 
             // Check if this client is authenticated
@@ -320,7 +320,7 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 CTFMessage::SpawnTeams => {
                     println!("Spawning teams");
                     // Spawn 1000 teams
-                    team::Entity::insert_many((0..10).into_iter().map(|i| team::ActiveModel {
+                    team::Entity::insert_many((0..10).map(|i| team::ActiveModel {
                         name: Set(format!("Team {}", i)),
                         join_token: Set("".to_string()),
                         ..Default::default()

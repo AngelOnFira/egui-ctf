@@ -2,11 +2,11 @@ use crate::{
     ctf_server::{
         ActorTask, ActorTaskTo, Auth, CTFServer, HandleData, SendNetworkMessage, UpdateState,
     },
-    messages::{IncomingCTFRequest, WsActorMessage},
+    messages::IncomingCTFRequest,
 };
-use actix::prelude::Recipient;
+
 use common::{
-    ctf_message::{CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate, GlobalData},
+    ctf_message::{CTFClientStateComponent, CTFMessage, CTFState, ClientUpdate},
     NetworkMessage,
 };
 use entity::entities::{hacker, token};
