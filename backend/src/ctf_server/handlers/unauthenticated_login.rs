@@ -1,5 +1,7 @@
 use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, Auth, CTFServer, SendNetworkMessage, UpdateState},
+    ctf_server::{
+        ActorTask, ActorTaskTo, Auth, CTFServer, HandleData, SendNetworkMessage, UpdateState,
+    },
     messages::{IncomingCTFRequest, WsActorMessage},
 };
 use actix::prelude::Recipient;
@@ -11,18 +13,12 @@ use entity::entities::{hacker, token};
 
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
-pub async fn handle(
-    token: String,
-    db_clone: &DatabaseConnection,
-    tasks: &mut Vec<ActorTask>,
-    msg: &IncomingCTFRequest,
-    recipient_clone: &Recipient<WsActorMessage>,
-) {
+pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String) {
     // Find any tokens in the database that match this token
     let token = token::Entity::find()
         .filter(token::Column::Token.eq(token))
         // Token is a primary key, so only getting one is fine
-        .one(db_clone)
+        .one(&handle_data.db_clone)
         .await
         .expect("Failed to get token");
 
@@ -32,7 +28,7 @@ pub async fn handle(
         Some(token) => {
             // Get the hacker associated with this token
             let hacker = hacker::Entity::find_by_id(token.fk_hacker_id.unwrap())
-                .one(db_clone)
+                .one(&handle_data.db_clone)
                 .await
                 .expect("Failed to get hacker");
 
@@ -40,7 +36,14 @@ pub async fn handle(
             // connection as the user they say they are
             match hacker {
                 Some(hacker) => {
-                    update_authenticated_user(tasks, msg, hacker, token, db_clone).await;
+                    update_authenticated_user(
+                        handle_data.tasks,
+                        handle_data.msg,
+                        hacker,
+                        token,
+                        &handle_data.db_clone,
+                    )
+                    .await;
                 }
                 // If this token doesn't have a hacker associated with it,
                 // something is wrong. This is unreachable.
@@ -54,7 +57,7 @@ pub async fn handle(
             // websocket connection
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::IncorrectToken)),
-                recipient_clone.clone(),
+                handle_data.recipient_clone.clone(),
             );
         }
     }

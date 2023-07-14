@@ -1,5 +1,5 @@
 use crate::{
-    ctf_server::{ActorTask, ActorTaskTo, CTFServer, SendNetworkMessage},
+    ctf_server::{ActorTask, ActorTaskTo, CTFServer, HandleData, SendNetworkMessage},
     messages::WsActorMessage,
 };
 use actix::prelude::Recipient;
@@ -13,22 +13,20 @@ use entity::entities::{challenge, hacker, submission, team};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub async fn auth_submit_flag(
+pub async fn handle<'a>(
+    handle_data: &'a mut HandleData<'a>,
     challenge_name: String,
-    db_clone: &DatabaseConnection,
     discord_id: i64,
-    recipient_clone: &Recipient<WsActorMessage>,
-    tasks: &mut Vec<ActorTask>,
     flag: String,
 ) -> Option<Vec<ActorTask>> {
     let challenge = challenge::Entity::find()
         .filter(challenge::Column::Title.eq(&challenge_name))
-        .one(db_clone)
+        .one(&handle_data.db_clone)
         .await
         .expect("Failed to get challenge");
 
     let hacker = hacker::Entity::find_by_id(discord_id)
-        .one(db_clone)
+        .one(&handle_data.db_clone)
         .await
         .expect("Failed to get hacker");
 
@@ -37,13 +35,13 @@ pub async fn auth_submit_flag(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 "You are not on a team, you can't submit a flag".to_string(),
             ))),
-            recipient_clone.clone(),
+            handle_data.recipient_clone.clone(),
         );
-        return Some(tasks.clone());
+        return Some(handle_data.tasks.clone());
     }
 
     let team = team::Entity::find_by_id(hacker.as_ref().unwrap().fk_team_id.unwrap())
-        .one(db_clone)
+        .one(&handle_data.db_clone)
         .await
         .expect("Failed to get team");
 
@@ -51,7 +49,7 @@ pub async fn auth_submit_flag(
         .filter(submission::Column::FkChallengeId.eq(challenge.as_ref().unwrap().id))
         .filter(submission::Column::FkTeamId.eq(team.as_ref().unwrap().id))
         .filter(submission::Column::Correct.eq(true))
-        .one(db_clone)
+        .one(&handle_data.db_clone)
         .await
         .expect("Failed to get existing correct submission");
 
@@ -60,9 +58,9 @@ pub async fn auth_submit_flag(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 "Your team has already solved this challenge!".to_string(),
             ))),
-            recipient_clone.clone(),
+            handle_data.recipient_clone.clone(),
         );
-        return Some(tasks.clone());
+        return Some(handle_data.tasks.clone());
     }
 
     let now: std::time::Duration = std::time::SystemTime::now()
@@ -104,7 +102,7 @@ pub async fn auth_submit_flag(
             // TODO: Remove this lol
             flag == "flag"
             {
-                let recipient_clone = recipient_clone.clone();
+                let recipient_clone = handle_data.recipient_clone.clone();
                 CTFServer::send_message_associated(
                     NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                         ClientUpdate::ScoredPoint(format!(
@@ -118,7 +116,7 @@ pub async fn auth_submit_flag(
                 // Change the submission
                 submission.correct = Set(true);
             } else {
-                let recipient_clone = recipient_clone.clone();
+                let recipient_clone = handle_data.recipient_clone.clone();
                 CTFServer::send_message_associated(
                     NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                         ClientUpdate::ScoredPoint(format!(
@@ -136,23 +134,25 @@ pub async fn auth_submit_flag(
             let solved = *submission.correct.as_ref();
 
             // Save the submission to the database
-            submission.insert(db_clone).await.unwrap();
+            submission.insert(&handle_data.db_clone).await.unwrap();
 
             if solved {
                 // Notify all the online clients about a scoreboard update
-                tasks.push(ActorTask::SendNetworkMessage(SendNetworkMessage {
-                    to: ActorTaskTo::BroadcastAll,
-                    message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
-                        CTFClientStateComponent::GlobalData(
-                            CTFState::get_global_data(db_clone).await,
-                        ),
-                    )),
-                }));
+                handle_data
+                    .tasks
+                    .push(ActorTask::SendNetworkMessage(SendNetworkMessage {
+                        to: ActorTaskTo::BroadcastAll,
+                        message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
+                            CTFClientStateComponent::GlobalData(
+                                CTFState::get_global_data(&handle_data.db_clone).await,
+                            ),
+                        )),
+                    }));
             }
         }
         None => {
             // Tell them that this challenge doesn't exist
-            let recipient_clone = recipient_clone.clone();
+            let recipient_clone = handle_data.recipient_clone.clone();
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::ScoredPoint(
                     "That challenge does not exist".to_string(),

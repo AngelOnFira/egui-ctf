@@ -1,6 +1,9 @@
-use crate::{messages::{
-    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
-}, repo::Repo};
+use crate::{
+    messages::{
+        CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
+    },
+    repo::Repo,
+};
 use actix::prelude::*;
 use common::{
     ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
@@ -188,6 +191,13 @@ pub enum ActorTaskTo {
     BroadcastAll,
 }
 
+pub struct HandleData<'a> {
+    pub db_clone: DatabaseConnection,
+    pub tasks: &'a mut Vec<ActorTask>,
+    pub msg: &'a IncomingCTFRequest,
+    pub recipient_clone: Recipient<WsActorMessage>,
+}
+
 impl Handler<IncomingCTFRequest> for CTFServer {
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
@@ -199,11 +209,19 @@ impl Handler<IncomingCTFRequest> for CTFServer {
         let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
         let ctf_message = msg.ctf_message.clone();
 
-        let msg_clone = msg.clone();
+        let msg_clone_1 = msg.clone();
+        let msg_clone_2 = msg.clone();
 
         let fut = async move {
             // Queue of tasks for the actor to take
             let mut tasks: Vec<ActorTask> = Vec::new();
+
+            let mut handle_data: HandleData<'_> = HandleData {
+                db_clone: db_clone_1.clone(),
+                tasks: &mut tasks,
+                msg: &msg_clone_1,
+                recipient_clone: recipient_clone,
+            };
 
             // Check if this client is authenticated
             match auth {
@@ -213,18 +231,10 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 // in after you
                 Auth::Unauthenticated => match ctf_message.clone() {
                     CTFMessage::Login(token) => {
-                        handlers::unauthenticated_login::handle(
-                            token,
-                            &db_clone_1,
-                            &mut tasks,
-                            &msg,
-                            &recipient_clone,
-                        )
-                        .await;
+                        handlers::unauthenticated_login::handle(&mut handle_data, token).await;
                     }
                     CTFMessage::Connect => {
-                        handlers::unauthenticated_connect::handle(&mut tasks, &msg, &db_clone_1)
-                            .await;
+                        handlers::unauthenticated_connect::handle(&mut handle_data).await;
                     }
                     _ => (),
                 },
@@ -235,16 +245,13 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                             challenge_name,
                             flag,
                         } => {
-                            if let Some(value) =
-                                handlers::authenticated_submit_flag::auth_submit_flag(
-                                    challenge_name,
-                                    &db_clone_1,
-                                    discord_id,
-                                    &recipient_clone,
-                                    &mut tasks,
-                                    flag,
-                                )
-                                .await
+                            if let Some(value) = handlers::authenticated_submit_flag::handle(
+                                &mut handle_data,
+                                challenge_name,
+                                discord_id,
+                                flag,
+                            )
+                            .await
                             {
                                 return value;
                             }
@@ -268,12 +275,9 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                         CTFMessage::JoinTeam(token) => {
                             if let Some(value) = handlers::authenticated_join_team::handle(
+                                &mut handle_data,
                                 token,
-                                &recipient_clone,
-                                &mut tasks,
-                                &db_clone_1,
                                 discord_id,
-                                &msg,
                             )
                             .await
                             {
@@ -282,12 +286,9 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                         CTFMessage::CreateTeam(team_name) => {
                             if let Some(value) = handlers::authenticated_create_team::handle(
+                                &mut handle_data,
                                 team_name,
-                                recipient_clone,
-                                &mut tasks,
-                                &db_clone_1,
                                 discord_id,
-                                &msg,
                             )
                             .await
                             {
@@ -296,7 +297,8 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                         }
                         CTFMessage::LeaveTeam => {
                             handlers::authenticated_leave_team::handle(
-                                discord_id, db_clone_1, &mut tasks, &msg,
+                                &mut handle_data,
+                                discord_id,
                             )
                             .await;
                         }
@@ -347,10 +349,10 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
         // Items to be moved into closure
         let recipient_clone: WsClientSocket =
-            self.sessions.get(&msg_clone.id).unwrap().socket.clone();
+            self.sessions.get(&msg_clone_2.id).unwrap().socket.clone();
 
         let fut = fut.map(move |result: Vec<ActorTask>, actor, _ctx| {
-            resolve_actor_state(result, actor, msg_clone, recipient_clone)
+            resolve_actor_state(result, actor, msg_clone_2, recipient_clone)
         });
 
         // Return the future to be run

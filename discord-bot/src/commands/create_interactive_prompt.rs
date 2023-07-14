@@ -31,7 +31,10 @@ pub async fn run(
     // The menu that people will be able to use to get their login token
     let _m = channel_id
         .send_message(&ctx, |m| {
-            m.content("# Help menu\n\nYou can create a login token so that you can access the web ui.").components(|c| {
+            m.content(
+                "# Help menu\n\nYou can create a login token so that you can access the web ui.",
+            )
+            .components(|c| {
                 c.create_action_row(|r| {
                     r.add_button(
                         CreateButton::default()
