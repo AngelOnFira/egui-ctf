@@ -41,14 +41,15 @@ impl AITeams {
                 {
                     Ok(hacker_list) => {
                         // If there is a hacker, pick one at random
-                        match hacker_list.choose(&mut rand::thread_rng()) {
+                        let random_hacker = hacker_list.choose(&mut rand::thread_rng());
+                        match random_hacker {
                             Some(hacker) => hacker.clone().into(),
                             None => {
                                 // If there isn't a hacker, create one
                                 let hacker = hacker::ActiveModel {
                                     fk_team_id: Set(Some(team.id)),
-                                    // Choose a random discord id
-                                    discord_id: Set(123),
+                                    // Choose a random discord id, 18 digits long
+                                    discord_id: Set(rand::random::<i64>()),
                                     username: Set("AI Hacker".to_string()),
                                 };
                                 let hacker = hacker.save(db).await.unwrap();
