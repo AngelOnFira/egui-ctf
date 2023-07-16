@@ -16,8 +16,7 @@ use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
-use super::{Auth, HandleData, ActorTask, UpdateState};
-
+use super::{ActorTask, Auth, HandleData, UpdateState};
 
 pub mod authenticated_create_team;
 pub mod authenticated_join_team;
@@ -26,11 +25,7 @@ pub mod authenticated_submit_flag;
 pub mod unauthenticated_connect;
 pub mod unauthenticated_login;
 
-pub async fn handle_request(
-    auth: Auth,
-    ctf_message: CTFMessage,
-    mut handle_data: HandleData<'_>,
-) {
+pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data: HandleData<'_>) {
     let db_clone = handle_data.db_clone.clone();
 
     match auth {
@@ -54,16 +49,13 @@ pub async fn handle_request(
                     challenge_name,
                     flag,
                 } => {
-                    if let Some(value) = authenticated_submit_flag::handle(
+                    authenticated_submit_flag::handle(
                         &mut handle_data,
                         challenge_name,
                         discord_id,
                         flag,
                     )
                     .await
-                    {
-                        return;
-                    }
                 }
                 CTFMessage::ClientUpdate(_) => todo!(),
                 // TODO: This can be hit after logout for some reason
@@ -71,7 +63,9 @@ pub async fn handle_request(
                 CTFMessage::Logout => {
                     // If a client wants to log out, deauthenticate
                     // their stream
-                    handle_data.tasks.push(ActorTask::UpdateState(UpdateState::Logout));
+                    handle_data
+                        .tasks
+                        .push(ActorTask::UpdateState(UpdateState::Logout));
 
                     // TODO: update everyone that this player has gone
                     // offline
@@ -83,26 +77,10 @@ pub async fn handle_request(
                     //             ClientUpdate::Logout, )), }, )]
                 }
                 CTFMessage::JoinTeam(token) => {
-                    if let Some(value) = authenticated_join_team::handle(
-                        &mut handle_data,
-                        token,
-                        discord_id,
-                    )
-                    .await
-                    {
-                        return;
-                    }
+                    authenticated_join_team::handle(&mut handle_data, token, discord_id).await
                 }
                 CTFMessage::CreateTeam(team_name) => {
-                    if let Some(value) = authenticated_create_team::handle(
-                        &mut handle_data,
-                        team_name,
-                        discord_id,
-                    )
-                    .await
-                    {
-                        return;
-                    }
+                    authenticated_create_team::handle(&mut handle_data, team_name, discord_id).await
                 }
                 CTFMessage::LeaveTeam => {
                     authenticated_leave_team::handle(&mut handle_data, discord_id).await;

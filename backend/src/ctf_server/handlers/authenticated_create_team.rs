@@ -14,7 +14,7 @@ pub async fn handle<'a>(
     handle_data: &'a mut HandleData<'a>,
     team_name: String,
     discord_id: i64,
-) -> Option<Vec<ActorTask>> {
+) {
     if team_name.is_empty() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -24,7 +24,7 @@ pub async fn handle<'a>(
         );
 
         // Return tasks
-        return Some(handle_data.tasks.clone());
+        return;
     }
     let team_exists: bool = team::Entity::find()
         .filter(team::Column::Name.eq(&team_name))
@@ -41,7 +41,7 @@ pub async fn handle<'a>(
         );
 
         // Return tasks
-        return Some(handle_data.tasks.clone());
+        return;
     }
     let team = team::ActiveModel {
         name: Set(team_name),
@@ -98,5 +98,4 @@ pub async fn handle<'a>(
     // Broadcast this new GlobalData to every client
 
     // Update the client's TeamData on their hacker joining a team
-    None
 }

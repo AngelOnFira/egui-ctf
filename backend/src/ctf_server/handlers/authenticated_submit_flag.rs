@@ -14,7 +14,7 @@ pub async fn handle<'a>(
     challenge_name: String,
     discord_id: i64,
     flag: String,
-) -> Option<Vec<ActorTask>> {
+) {
     let challenge = challenge::Entity::find()
         .filter(challenge::Column::Title.eq(&challenge_name))
         .one(&handle_data.db_clone)
@@ -33,7 +33,7 @@ pub async fn handle<'a>(
             ))),
             handle_data.recipient_clone.clone(),
         );
-        return Some(handle_data.tasks.clone());
+        return;
     }
 
     let team = team::Entity::find_by_id(hacker.as_ref().unwrap().fk_team_id.unwrap())
@@ -56,7 +56,7 @@ pub async fn handle<'a>(
             ))),
             handle_data.recipient_clone.clone(),
         );
-        return Some(handle_data.tasks.clone());
+        return;
     }
 
     let now: std::time::Duration = std::time::SystemTime::now()
@@ -157,5 +157,4 @@ pub async fn handle<'a>(
             )
         }
     }
-    None
 }

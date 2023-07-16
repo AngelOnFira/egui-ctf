@@ -12,7 +12,7 @@ pub async fn handle<'a>(
     handle_data: &'a mut HandleData<'a>,
     token: String,
     discord_id: i64,
-) -> Option<Vec<ActorTask>> {
+) {
     if token.is_empty() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -22,7 +22,7 @@ pub async fn handle<'a>(
         );
 
         // Return tasks
-        return Some(handle_data.tasks.clone());
+        return;
     }
     let team: Option<team::Model> = team::Entity::find()
         .filter(team::Column::JoinToken.eq(&token))
@@ -44,7 +44,7 @@ pub async fn handle<'a>(
             );
 
             // Return tasks
-            return Some(handle_data.tasks.clone());
+            return;
         }
         Some(team) => {
             // Get the hacker associated with this request
@@ -65,7 +65,7 @@ pub async fn handle<'a>(
                 );
 
                 // Return tasks
-                return Some(handle_data.tasks.clone());
+                return;
             }
 
             // Update the hacker's team id
@@ -111,5 +111,4 @@ pub async fn handle<'a>(
             );
         }
     }
-    None
 }
