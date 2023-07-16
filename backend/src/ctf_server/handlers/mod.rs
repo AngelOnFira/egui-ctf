@@ -1,20 +1,10 @@
-use crate::{
-    messages::{
-        CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
-    },
-    repo::Repo,
-};
+use crate::repo::Repo;
 use actix::prelude::*;
-use common::{
-    ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
-    ClientId, NetworkMessage,
-};
+use common::ctf_message::CTFMessage;
 
 use entity::entities::team;
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
-use std::{collections::HashMap, time::Duration};
-use uuid::Uuid;
+use sea_orm::{EntityTrait, Set};
 
 use super::{ActorTask, Auth, HandleData, UpdateState};
 

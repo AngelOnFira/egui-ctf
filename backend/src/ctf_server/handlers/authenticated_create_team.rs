@@ -10,11 +10,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use uuid::Uuid;
 
-pub async fn handle<'a>(
-    handle_data: &'a mut HandleData<'a>,
-    team_name: String,
-    discord_id: i64,
-) {
+pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, team_name: String, discord_id: i64) {
     if team_name.is_empty() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(

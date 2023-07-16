@@ -1,18 +1,13 @@
-use crate::{
-    messages::{
-        CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
-    },
-    repo::Repo,
+use crate::messages::{
+    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
 };
 use actix::prelude::*;
 use common::{
-    ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
+    ctf_message::{CTFState, ClientData, DiscordClientId, GameData, TeamData},
     ClientId, NetworkMessage,
 };
 
-use entity::entities::team;
-use migration::{Migrator, MigratorTrait};
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
@@ -208,13 +203,13 @@ impl Handler<IncomingCTFRequest> for CTFServer {
     fn handle(&mut self, msg: IncomingCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         // Items to be moved into closure
         let db_clone_1 = self.db.clone();
-        let db_clone_2 = self.db.clone();
+        let _db_clone_2 = self.db.clone();
         let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
         let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
         let ctf_message = msg.ctf_message.clone();
 
         let msg_clone_1 = msg.clone();
-        let msg_clone_2 = msg.clone();
+        let msg_clone_2 = msg;
 
         let fut = async move {
             // Queue of tasks for the actor to take
