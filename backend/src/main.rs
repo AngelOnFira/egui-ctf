@@ -30,8 +30,8 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    // Reset the database /shrug
-    Migrator::fresh(&ctf_server.db).await.unwrap();
+    // // Reset the database /shrug
+    // Migrator::fresh(&ctf_server.db).await.unwrap();
 
     // Run database migrations
     // Migrator::up(&ctf_server.db, None).await.unwrap();

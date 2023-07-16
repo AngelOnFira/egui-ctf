@@ -16,7 +16,7 @@ use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 
-use self::ai_teams::AITeams;
+use self::{ai_teams::AITeams, handlers::handle_request};
 
 pub mod ai_teams;
 pub mod handlers;
@@ -185,9 +185,13 @@ pub struct SendNetworkMessage {
 
 #[derive(Debug, Clone)]
 pub enum ActorTaskTo {
+    /// Send to a certain session
     Session(Uuid),
+    /// Send to a certain team
     Team(Vec<Uuid>),
+    /// Send to all authenticated clients
     BroadcastAuthenticated,
+    /// Send to all connected clients
     BroadcastAll,
 }
 
@@ -210,137 +214,20 @@ impl Handler<IncomingCTFRequest> for CTFServer {
         let ctf_message = msg.ctf_message.clone();
 
         let msg_clone_1 = msg.clone();
-        let msg_clone_2 = msg;
+        let msg_clone_2 = msg.clone();
 
         let fut = async move {
             // Queue of tasks for the actor to take
             let mut tasks: Vec<ActorTask> = Vec::new();
 
-            let mut handle_data: HandleData<'_> = HandleData {
+            let handle_data: HandleData<'_> = HandleData {
                 db_clone: db_clone_1.clone(),
                 tasks: &mut tasks,
                 msg: &msg_clone_1,
                 recipient_clone,
             };
 
-            // Check if this client is authenticated
-            match auth {
-                // If they are unauthenticated, the only message we'll take from
-                // them is a login message.and TODO: Should this also allow
-                // public data to be seen? TODO: What happens if you try to log
-                // in after you
-                Auth::Unauthenticated => match ctf_message.clone() {
-                    CTFMessage::Login(token) => {
-                        handlers::unauthenticated_login::handle(&mut handle_data, token).await;
-                    }
-                    CTFMessage::Connect => {
-                        handlers::unauthenticated_connect::handle(&mut handle_data).await;
-                    }
-                    _ => (),
-                },
-                Auth::Hacker { discord_id } => {
-                    match ctf_message.clone() {
-                        CTFMessage::CTFClientStateComponent(_) => todo!(),
-                        CTFMessage::SubmitFlag {
-                            challenge_name,
-                            flag,
-                        } => {
-                            if let Some(value) = handlers::authenticated_submit_flag::handle(
-                                &mut handle_data,
-                                challenge_name,
-                                discord_id,
-                                flag,
-                            )
-                            .await
-                            {
-                                return value;
-                            }
-                        }
-                        CTFMessage::ClientUpdate(_) => todo!(),
-                        // TODO: This can be hit after logout for some reason
-                        CTFMessage::Login(_) => todo!(),
-                        CTFMessage::Logout => {
-                            // If a client wants to log out, deauthenticate
-                            // their stream
-                            tasks.push(ActorTask::UpdateState(UpdateState::Logout));
-
-                            // TODO: update everyone that this player has gone
-                            // offline
-
-                            // return vec![ActorTask::SendNetworkMessage(
-                            //     SendNetworkMessage { to:
-                            //         ActorTaskTo::Session(msg.id), message:
-                            //         NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                            //             ClientUpdate::Logout, )), }, )]
-                        }
-                        CTFMessage::JoinTeam(token) => {
-                            if let Some(value) = handlers::authenticated_join_team::handle(
-                                &mut handle_data,
-                                token,
-                                discord_id,
-                            )
-                            .await
-                            {
-                                return value;
-                            }
-                        }
-                        CTFMessage::CreateTeam(team_name) => {
-                            if let Some(value) = handlers::authenticated_create_team::handle(
-                                &mut handle_data,
-                                team_name,
-                                discord_id,
-                            )
-                            .await
-                            {
-                                return value;
-                            }
-                        }
-                        CTFMessage::LeaveTeam => {
-                            handlers::authenticated_leave_team::handle(
-                                &mut handle_data,
-                                discord_id,
-                            )
-                            .await;
-                        }
-                        CTFMessage::Connect => todo!(),
-                        CTFMessage::ResetDB => (),
-                        CTFMessage::SpawnTeams => (),
-                        CTFMessage::CloneRepo => (),
-                    }
-                }
-            }
-
-            // Things that don't matter if you're logged in or not
-            match ctf_message {
-                CTFMessage::ResetDB => {
-                    println!("Resetting database");
-                    // Rerun the migrations on the database
-                    Migrator::fresh(&db_clone_2).await.unwrap();
-                }
-                CTFMessage::SpawnTeams => {
-                    println!("Spawning teams");
-                    // Spawn 1000 teams
-                    team::Entity::insert_many((0..10).map(|i| team::ActiveModel {
-                        name: Set(format!("Team {}", i)),
-                        join_token: Set("".to_string()),
-                        ..Default::default()
-                    }))
-                    .exec(&db_clone_2)
-                    .await
-                    .unwrap();
-                }
-                CTFMessage::CloneRepo => {
-                    // Download the repo
-                    Repo::clone_repo();
-
-                    // Load the repo from the repository
-                    let repo = Repo::parse_repo();
-
-                    // Load all the challenges found into the database
-                    repo.update_database().await;
-                }
-                _ => (),
-            }
+            handle_request(auth, ctf_message, handle_data).await;
 
             tasks
         };
