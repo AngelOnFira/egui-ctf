@@ -3,7 +3,7 @@ use crate::messages::{
 };
 use actix::prelude::*;
 use common::{
-    ctf_message::{CTFState, ClientData, DiscordClientId, GameData, TeamData},
+    ctf_message::{CTFMessage, CTFState, ClientData, DiscordClientId, GameData, TeamData},
     ClientId, NetworkMessage,
 };
 
@@ -42,12 +42,7 @@ impl Session {
 #[derive(Debug, Clone)]
 pub enum Auth {
     Unauthenticated,
-    Hacker { agent: Agent },
-}
-
-pub enum Agent {
-    DiscordUser { discord_id: DiscordClientId },
-    AI { team_id: i32 },
+    Hacker { discord_id: DiscordClientId },
 }
 
 impl CTFServer {
@@ -88,7 +83,12 @@ impl Actor for CTFServer {
 }
 
 impl CTFServer {
-    fn send_message(&self, message: NetworkMessage, id_to: &ClientId) {
+    fn send_message(&self, message: NetworkMessage, id_to: &RequestID) {
+        let id_to = match id_to {
+            RequestID::Actix(id) => id,
+            RequestID::Anonymous => return,
+        };
+
         if let Some(socket_recipient) = self.sessions.get(id_to) {
             socket_recipient
                 .socket
@@ -186,7 +186,7 @@ pub struct SendNetworkMessage {
 #[derive(Debug, Clone)]
 pub enum ActorTaskTo {
     /// Send to a certain session
-    Session(Uuid),
+    Session(RequestID),
     /// Send to a certain team
     Team(Vec<Uuid>),
     /// Send to all authenticated clients
@@ -198,8 +198,22 @@ pub enum ActorTaskTo {
 pub struct HandleData<'a> {
     pub db_clone: DatabaseConnection,
     pub tasks: &'a mut Vec<ActorTask>,
-    pub msg: &'a IncomingCTFRequest,
-    pub recipient_clone: Recipient<WsActorMessage>,
+    pub request: ActixRequest,
+}
+
+#[derive(Debug, Clone)]
+pub struct ActixRequest {
+    pub id: RequestID,
+    pub ctf_message: CTFMessage,
+}
+
+#[derive(Debug, Clone)]
+pub enum RequestID {
+    Actix {
+        id: ClientId,
+        recipient: Recipient<WsActorMessage>,
+    },
+    Anonymous,
 }
 
 impl Handler<IncomingCTFRequest> for CTFServer {
@@ -223,11 +237,16 @@ impl Handler<IncomingCTFRequest> for CTFServer {
             let handle_data: HandleData<'_> = HandleData {
                 db_clone: db_clone_1.clone(),
                 tasks: &mut tasks,
-                msg: &msg_clone_1,
-                recipient_clone,
+                request: ActixRequest {
+                    id: RequestID::Actix {
+                        id: msg_clone_1.id,
+                        recipient: recipient_clone,
+                    },
+                    ctf_message: msg_clone_1.ctf_message,
+                },
             };
 
-            handle_request(auth, ctf_message, handle_data).await;
+            handle_request(auth, handle_data).await;
 
             tasks
         };
@@ -303,7 +322,10 @@ fn resolve_actor_state(
                 }
                 ActorTaskTo::Team(team_members) => {
                     for member_id in team_members {
-                        actor.send_message(send_network_message.message.clone(), &member_id);
+                        actor.send_message(
+                            send_network_message.message.clone(),
+                            &RequestID::Actix(member_id),
+                        );
                     }
                 }
                 ActorTaskTo::BroadcastAuthenticated => {

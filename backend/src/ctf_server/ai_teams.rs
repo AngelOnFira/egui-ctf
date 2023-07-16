@@ -1,13 +1,13 @@
 use chrono::NaiveDateTime;
 use common::ctf_message::CTFMessage;
 use entity::{
-    entities::{submission, team},
+    entities::{hacker, submission, team},
     helpers::get_team_unsolved_challenges,
 };
 use rand::seq::SliceRandom;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
-use super::{handlers::handle_request, Auth, HandleData, Agent};
+use super::{handlers::handle_request, Auth, HandleData};
 
 #[derive(Debug, Clone)]
 pub struct AITeams {}
@@ -32,6 +32,34 @@ impl AITeams {
             let seconds_for_chance = 10.0;
 
             if rand::random::<f32>() < ((1.0 * 5.0) / seconds_for_chance) {
+                // Find a random player on this team to be the solver of the
+                // challenge. If there isn't any player, create one.
+                let hacker: hacker::ActiveModel = match hacker::Entity::find()
+                    .filter(hacker::Column::FkTeamId.eq(team.id))
+                    .all(db)
+                    .await
+                {
+                    Ok(hacker_list) => {
+                        // If there is a hacker, pick one at random
+                        hacker_list
+                            .choose(&mut rand::thread_rng())
+                            .expect("Failed to choose hacker")
+                            .clone()
+                            .into()
+                    }
+                    Err(_) => {
+                        // If there isn't a hacker, create one
+                        let hacker = hacker::ActiveModel {
+                            fk_team_id: Set(Some(team.id)),
+                            // Choose a random discord id
+                            discord_id: Set(123),
+                            username: Set("AI Hacker".to_string()),
+                        };
+                        let hacker = hacker.save(db).await.unwrap();
+                        hacker
+                    }
+                };
+
                 // Find a challenge that this team hasn't solved. Do this by
                 // getting a list of all the challenges they have unsolved, and
                 // pick one of them at random.
@@ -52,16 +80,17 @@ impl AITeams {
 
                 // Handle solving it
                 handle_request(
-                    Auth::Hacker { agent: Agent::AI },
-                    CTFMessage::SubmitFlag {
-                        challenge_name: challenge.title.clone(),
-                        flag: challenge.flag.clone(),
+                    Auth::Hacker {
+                        discord_id: hacker.discord_id.unwrap(),
                     },
                     HandleData {
                         db_clone: db.clone(),
-                        tasks: todo!(),
-                        msg: todo!(),
-                        recipient_clone: todo!(),
+                        tasks: &mut Vec::new(),
+                        request: ActixRequest { id: RequestID, ctf_message: CTFMessage::SubmitFlag {
+                            challenge_name: challenge.title.clone(),
+                            flag: challenge.flag.clone(),
+                        } },
+                        recipient_clone: None,
                     },
                 )
                 .await;

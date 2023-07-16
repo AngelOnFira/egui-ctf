@@ -8,7 +8,7 @@ use entity::entities::{hacker, team};
 
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
-pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, agent: Agent) {
+pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, discord_id: i64) {
     if token.is_empty() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -76,7 +76,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, agen
             handle_data
                 .tasks
                 .push(ActorTask::SendNetworkMessage(SendNetworkMessage {
-                    to: ActorTaskTo::Session(handle_data.msg.id),
+                    to: ActorTaskTo::Session(handle_data.request.id),
                     message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
                         CTFClientStateComponent::ClientData(
                             CTFState::get_hacker_client_data(hacker_id, &handle_data.db_clone)
@@ -89,7 +89,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, agen
             handle_data
                 .tasks
                 .push(ActorTask::SendNetworkMessage(SendNetworkMessage {
-                    to: ActorTaskTo::Session(handle_data.msg.id),
+                    to: ActorTaskTo::Session(handle_data.request.id),
                     message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
                         CTFClientStateComponent::TeamData(
                             CTFState::get_hacker_team_data(hacker_id, &handle_data.db_clone).await,

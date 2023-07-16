@@ -15,15 +15,18 @@ pub mod authenticated_submit_flag;
 pub mod unauthenticated_connect;
 pub mod unauthenticated_login;
 
-pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data: HandleData<'_>) {
+pub async fn handle_request(auth: Auth, mut handle_data: HandleData<'_>) {
     let db_clone = handle_data.db_clone.clone();
+
+    let ctf_message_clone_1 = handle_data.request.ctf_message.clone();
+    let ctf_message_clone_2 = handle_data.request.ctf_message.clone();
 
     match auth {
         // If they are unauthenticated, the only message we'll take from
         // them is a login message.and TODO: Should this also allow
         // public data to be seen? TODO: What happens if you try to log
         // in after you
-        Auth::Unauthenticated => match ctf_message.clone() {
+        Auth::Unauthenticated => match ctf_message_clone_1 {
             CTFMessage::Login(token) => {
                 unauthenticated_login::handle(&mut handle_data, token).await;
             }
@@ -32,8 +35,8 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
             }
             _ => (),
         },
-        Auth::Hacker { agent } => {
-            match ctf_message.clone() {
+        Auth::Hacker { discord_id } => {
+            match ctf_message_clone_1 {
                 CTFMessage::CTFClientStateComponent(_) => todo!(),
                 CTFMessage::SubmitFlag {
                     challenge_name,
@@ -42,7 +45,7 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
                     authenticated_submit_flag::handle(
                         &mut handle_data,
                         challenge_name,
-                        agent,
+                        discord_id,
                         flag,
                     )
                     .await
@@ -67,13 +70,13 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
                     //             ClientUpdate::Logout, )), }, )]
                 }
                 CTFMessage::JoinTeam(token) => {
-                    authenticated_join_team::handle(&mut handle_data, token, agent).await
+                    authenticated_join_team::handle(&mut handle_data, token, discord_id).await
                 }
                 CTFMessage::CreateTeam(team_name) => {
-                    authenticated_create_team::handle(&mut handle_data, team_name, agent).await
+                    authenticated_create_team::handle(&mut handle_data, team_name, discord_id).await
                 }
                 CTFMessage::LeaveTeam => {
-                    authenticated_leave_team::handle(&mut handle_data, agent).await;
+                    authenticated_leave_team::handle(&mut handle_data, discord_id).await;
                 }
                 CTFMessage::Connect => todo!(),
                 CTFMessage::ResetDB => (),
@@ -83,7 +86,7 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
         }
     }
 
-    match ctf_message {
+    match ctf_message_clone_2 {
         CTFMessage::ResetDB => {
             println!("Resetting database");
             // Rerun the migrations on the database

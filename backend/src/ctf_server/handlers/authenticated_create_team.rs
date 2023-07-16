@@ -10,7 +10,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use uuid::Uuid;
 
-pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, team_name: String, agent: Agent) {
+pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, team_name: String, discord_id: i64) {
     if team_name.is_empty() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
@@ -68,7 +68,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, team_name: String, 
     handle_data
         .tasks
         .push(ActorTask::SendNetworkMessage(SendNetworkMessage {
-            to: ActorTaskTo::Session(handle_data.msg.id),
+            to: ActorTaskTo::Session(handle_data.request.id),
             message: NetworkMessage::CTFMessage(CTFMessage::CTFClientStateComponent(
                 CTFClientStateComponent::TeamData(
                     CTFState::get_hacker_team_data(discord_id, &handle_data.db_clone).await,

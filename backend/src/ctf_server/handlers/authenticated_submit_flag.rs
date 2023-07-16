@@ -1,4 +1,4 @@
-use crate::ctf_server::{ActorTask, ActorTaskTo, Agent, CTFServer, HandleData, SendNetworkMessage};
+use crate::ctf_server::{ActorTask, ActorTaskTo, CTFServer, HandleData, SendNetworkMessage};
 
 use chrono::NaiveDateTime;
 use common::{
@@ -12,7 +12,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 pub async fn handle<'a>(
     handle_data: &'a mut HandleData<'a>,
     challenge_name: String,
-    agent: Agent,
+    discord_id: i64,
     flag: String,
 ) {
     let challenge = challenge::Entity::find()
@@ -21,93 +21,59 @@ pub async fn handle<'a>(
         .await
         .expect("Failed to get challenge");
 
-    let mut submission = match agent {
-        // If a hacker is submitting a flag
-        Agent::DiscordUser { discord_id } => {
-            let hacker = hacker::Entity::find_by_id(discord_id)
-                .one(&handle_data.db_clone)
-                .await
-                .expect("Failed to get hacker");
+    let hacker = hacker::Entity::find_by_id(discord_id)
+        .one(&handle_data.db_clone)
+        .await
+        .expect("Failed to get hacker");
 
-            if hacker.as_ref().unwrap().fk_team_id.is_none() {
-                CTFServer::send_message_associated(
-                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                        ClientUpdate::Notification(
-                            "You are not on a team, you can't submit a flag".to_string(),
-                        ),
-                    )),
-                    handle_data.recipient_clone.clone(),
-                );
-                return;
-            }
+    if hacker.as_ref().unwrap().fk_team_id.is_none() {
+        CTFServer::send_message_associated(
+            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
+                "You are not on a team, you can't submit a flag".to_string(),
+            ))),
+            handle_data.recipient_clone.clone(),
+        );
+        return;
+    }
 
-            let team = team::Entity::find_by_id(hacker.as_ref().unwrap().fk_team_id.unwrap())
-                .one(&handle_data.db_clone)
-                .await
-                .expect("Failed to get team")
-                .expect("Didn't find the team in the database");
+    let team = team::Entity::find_by_id(hacker.as_ref().unwrap().fk_team_id.unwrap())
+        .one(&handle_data.db_clone)
+        .await
+        .expect("Failed to get team")
+        .expect("Didn't find the team in the database");
 
-            // Next, we'll check if this team has already solved this challenge
-            let existing_correct_submission = submission::Entity::find()
-                .filter(submission::Column::FkChallengeId.eq(challenge.as_ref().unwrap().id))
-                .filter(submission::Column::FkTeamId.eq(team.id))
-                .filter(submission::Column::Correct.eq(true))
-                .one(&handle_data.db_clone)
-                .await
-                .expect("Failed to get existing correct submission");
+    // Next, we'll check if this team has already solved this challenge
+    let existing_correct_submission = submission::Entity::find()
+        .filter(submission::Column::FkChallengeId.eq(challenge.as_ref().unwrap().id))
+        .filter(submission::Column::FkTeamId.eq(team.id))
+        .filter(submission::Column::Correct.eq(true))
+        .one(&handle_data.db_clone)
+        .await
+        .expect("Failed to get existing correct submission");
 
-            if existing_correct_submission.is_some() {
-                CTFServer::send_message_associated(
-                    NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
-                        ClientUpdate::Notification(
-                            "Your team has already solved this challenge!".to_string(),
-                        ),
-                    )),
-                    handle_data.recipient_clone.clone(),
-                );
-                return;
-            }
+    if existing_correct_submission.is_some() {
+        CTFServer::send_message_associated(
+            NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
+                "Your team has already solved this challenge!".to_string(),
+            ))),
+            handle_data.recipient_clone.clone(),
+        );
+        return;
+    }
 
-            let now: std::time::Duration = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap();
+    let now: std::time::Duration = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap();
 
-            submission::ActiveModel {
-                flag: Set(flag.clone()),
-                // Get the current time as a string
-                time: Set(NaiveDateTime::from_timestamp_opt(
-                    now.as_secs() as i64,
-                    now.subsec_nanos(),
-                )
-                .unwrap()),
-                fk_hacker_id: Set(Some(hacker.unwrap().discord_id)),
-                fk_team_id: Set(Some(team.id)),
-                ..Default::default()
-            }
-        }
-        // If an AI is submitting a flag
-        Agent::AI { team_id } => {
-            let team = team::Entity::find_by_id(team_id)
-                .one(&handle_data.db_clone)
-                .await
-                .expect("Failed to get team");
-
-            let now: std::time::Duration = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap();
-
-            submission::ActiveModel {
-                flag: Set(flag.clone()),
-                // Get the current time as a string
-                time: Set(NaiveDateTime::from_timestamp_opt(
-                    now.as_secs() as i64,
-                    now.subsec_nanos(),
-                )
-                .unwrap()),
-                fk_team_id: Set(Some(team.unwrap().id)),
-                ..Default::default()
-            }
-        }
+    let mut submission = submission::ActiveModel {
+        flag: Set(flag.clone()),
+        // Get the current time as a string
+        time: Set(
+            NaiveDateTime::from_timestamp_opt(now.as_secs() as i64, now.subsec_nanos()).unwrap(),
+        ),
+        fk_hacker_id: Set(Some(hacker.unwrap().discord_id)),
+        fk_team_id: Set(Some(team.id)),
+        ..Default::default()
     };
 
     // Check the database to see if there are any challenges with this name
