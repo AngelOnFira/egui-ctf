@@ -31,7 +31,7 @@ pub async fn handle<'a>(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 "You are not on a team, you can't submit a flag".to_string(),
             ))),
-            handle_data.recipient_clone.clone(),
+            handle_data.recipient.clone(),
         );
         return;
     }
@@ -56,7 +56,7 @@ pub async fn handle<'a>(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 "Your team has already solved this challenge!".to_string(),
             ))),
-            handle_data.recipient_clone.clone(),
+            handle_data.recipient.clone(),
         );
         return;
     }
@@ -101,7 +101,7 @@ pub async fn handle<'a>(
             // TODO: Remove this lol
             flag == "flag"
             {
-                let recipient_clone = handle_data.recipient_clone.clone();
+                let recipient_clone = handle_data.recipient.clone();
                 CTFServer::send_message_associated(
                     NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                         ClientUpdate::ScoredPoint(format!(
@@ -115,7 +115,7 @@ pub async fn handle<'a>(
                 // Change the submission
                 submission.correct = Set(true);
             } else {
-                let recipient_clone = handle_data.recipient_clone.clone();
+                let recipient_clone = handle_data.recipient.clone();
                 CTFServer::send_message_associated(
                     NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                         ClientUpdate::ScoredPoint(format!(
@@ -151,7 +151,7 @@ pub async fn handle<'a>(
         }
         None => {
             // Tell them that this challenge doesn't exist
-            let recipient_clone = handle_data.recipient_clone.clone();
+            let recipient_clone = handle_data.recipient.clone();
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::ScoredPoint(
                     "That challenge does not exist".to_string(),

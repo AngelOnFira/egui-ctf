@@ -16,7 +16,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, team_name: String, 
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 "Team name cannot be empty".to_string(),
             ))),
-            handle_data.recipient_clone.clone(),
+            handle_data.recipient.clone(),
         );
 
         // Return tasks
@@ -33,7 +33,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, team_name: String, 
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 format!("Team '{}' already exists", team_name),
             ))),
-            handle_data.recipient_clone.clone(),
+            handle_data.recipient.clone(),
         );
 
         // Return tasks

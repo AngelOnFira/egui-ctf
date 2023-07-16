@@ -7,7 +7,7 @@ use entity::{
 use rand::seq::SliceRandom;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
-use super::{handlers::handle_request, Auth, HandleData};
+use super::{handlers::handle_request, ActixRecipient, ActixRequest, Auth, HandleData, RequestID};
 
 #[derive(Debug, Clone)]
 pub struct AITeams {}
@@ -41,22 +41,24 @@ impl AITeams {
                 {
                     Ok(hacker_list) => {
                         // If there is a hacker, pick one at random
-                        hacker_list
-                            .choose(&mut rand::thread_rng())
-                            .expect("Failed to choose hacker")
-                            .clone()
-                            .into()
+                        match hacker_list.choose(&mut rand::thread_rng()) {
+                            Some(hacker) => hacker.clone().into(),
+                            None => {
+                                // If there isn't a hacker, create one
+                                let hacker = hacker::ActiveModel {
+                                    fk_team_id: Set(Some(team.id)),
+                                    // Choose a random discord id
+                                    discord_id: Set(123),
+                                    username: Set("AI Hacker".to_string()),
+                                };
+                                let hacker = hacker.save(db).await.unwrap();
+                                hacker
+                            }
+                        }
                     }
                     Err(_) => {
-                        // If there isn't a hacker, create one
-                        let hacker = hacker::ActiveModel {
-                            fk_team_id: Set(Some(team.id)),
-                            // Choose a random discord id
-                            discord_id: Set(123),
-                            username: Set("AI Hacker".to_string()),
-                        };
-                        let hacker = hacker.save(db).await.unwrap();
-                        hacker
+                        // Panic idk
+                        panic!("Failed to get hackers");
                     }
                 };
 
@@ -74,10 +76,6 @@ impl AITeams {
                     }
                 };
 
-                let now: std::time::Duration = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap();
-
                 // Handle solving it
                 handle_request(
                     Auth::Hacker {
@@ -86,11 +84,14 @@ impl AITeams {
                     HandleData {
                         db_clone: db.clone(),
                         tasks: &mut Vec::new(),
-                        request: ActixRequest { id: RequestID, ctf_message: CTFMessage::SubmitFlag {
-                            challenge_name: challenge.title.clone(),
-                            flag: challenge.flag.clone(),
-                        } },
-                        recipient_clone: None,
+                        request: ActixRequest {
+                            id: RequestID::Anonymous,
+                            ctf_message: CTFMessage::SubmitFlag {
+                                challenge_name: challenge.title.clone(),
+                                flag: challenge.flag.clone(),
+                            },
+                        },
+                        recipient: ActixRecipient::Anonymous,
                     },
                 )
                 .await;

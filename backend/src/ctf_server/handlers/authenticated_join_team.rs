@@ -14,7 +14,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, disc
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                 "Token cannot be empty".to_string(),
             ))),
-            handle_data.recipient_clone.clone(),
+            handle_data.recipient.clone(),
         );
 
         // Return tasks
@@ -36,7 +36,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, disc
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                     "No team exists with this token".to_string(),
                 ))),
-                handle_data.recipient_clone.clone(),
+                handle_data.recipient.clone(),
             );
 
             // Return tasks
@@ -56,7 +56,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, disc
                     NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(
                         ClientUpdate::Notification("You are already on a team".to_string()),
                     )),
-                    handle_data.recipient_clone.clone(),
+                    handle_data.recipient.clone(),
                 );
 
                 // Return tasks
@@ -102,7 +102,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, disc
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(
                     format!("You joined team {}", team.name),
                 ))),
-                handle_data.recipient_clone.clone(),
+                handle_data.recipient.clone(),
             );
         }
     }

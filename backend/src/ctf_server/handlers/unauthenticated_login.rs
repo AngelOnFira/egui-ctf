@@ -1,6 +1,7 @@
 use crate::{
     ctf_server::{
-        ActorTask, ActorTaskTo, Auth, CTFServer, HandleData, SendNetworkMessage, UpdateState, ActixRequest,
+        ActixRequest, ActorTask, ActorTaskTo, Auth, CTFServer, HandleData, SendNetworkMessage,
+        UpdateState,
     },
     messages::IncomingCTFRequest,
 };
@@ -57,7 +58,7 @@ pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String) {
             // websocket connection
             CTFServer::send_message_associated(
                 NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::IncorrectToken)),
-                handle_data.recipient_clone.clone(),
+                handle_data.recipient.clone(),
             );
         }
     }

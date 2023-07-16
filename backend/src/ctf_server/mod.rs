@@ -98,8 +98,10 @@ impl CTFServer {
         }
     }
 
-    fn send_message_associated(message: NetworkMessage, to: WsClientSocket) {
-        to.do_send(WsActorMessage::IncomingMessage(message));
+    fn send_message_associated(message: NetworkMessage, to: ActixRecipient) {
+        if let ActixRecipient::Actix(to) = to {
+            to.do_send(WsActorMessage::IncomingMessage(message));
+        }
     }
 
     fn broadcast_message(&self, message: NetworkMessage) {
@@ -199,6 +201,13 @@ pub struct HandleData<'a> {
     pub db_clone: DatabaseConnection,
     pub tasks: &'a mut Vec<ActorTask>,
     pub request: ActixRequest,
+    pub recipient: ActixRecipient,
+}
+
+#[derive(Debug, Clone)]
+pub enum ActixRecipient {
+    Actix(Recipient<WsActorMessage>),
+    Anonymous,
 }
 
 #[derive(Debug, Clone)]
@@ -207,12 +216,9 @@ pub struct ActixRequest {
     pub ctf_message: CTFMessage,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum RequestID {
-    Actix {
-        id: ClientId,
-        recipient: Recipient<WsActorMessage>,
-    },
+    Actix(ClientId),
     Anonymous,
 }
 
@@ -238,12 +244,10 @@ impl Handler<IncomingCTFRequest> for CTFServer {
                 db_clone: db_clone_1.clone(),
                 tasks: &mut tasks,
                 request: ActixRequest {
-                    id: RequestID::Actix {
-                        id: msg_clone_1.id,
-                        recipient: recipient_clone,
-                    },
+                    id: RequestID::Actix(msg_clone_1.id),
                     ctf_message: msg_clone_1.ctf_message,
                 },
+                recipient: ActixRecipient::Actix(recipient_clone),
             };
 
             handle_request(auth, handle_data).await;
