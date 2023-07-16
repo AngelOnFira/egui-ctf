@@ -8,7 +8,7 @@ use entity::entities::{hacker, team};
 
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
-pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, discord_id: i64) {
+pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, token: String, agent: Agent) {
     if token.is_empty() {
         CTFServer::send_message_associated(
             NetworkMessage::CTFMessage(CTFMessage::ClientUpdate(ClientUpdate::Notification(

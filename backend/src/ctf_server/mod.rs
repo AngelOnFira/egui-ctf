@@ -42,7 +42,12 @@ impl Session {
 #[derive(Debug, Clone)]
 pub enum Auth {
     Unauthenticated,
-    Hacker { discord_id: DiscordClientId },
+    Hacker { agent: Agent },
+}
+
+pub enum Agent {
+    DiscordUser { discord_id: DiscordClientId },
+    AI { team_id: i32 },
 }
 
 impl CTFServer {

@@ -1,10 +1,13 @@
 use chrono::NaiveDateTime;
+use common::ctf_message::CTFMessage;
 use entity::{
     entities::{submission, team},
     helpers::get_team_unsolved_challenges,
 };
 use rand::seq::SliceRandom;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+
+use super::{handlers::handle_request, Auth, HandleData, Agent};
 
 #[derive(Debug, Clone)]
 pub struct AITeams {}
@@ -47,23 +50,39 @@ impl AITeams {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap();
 
-                // Create a submission for this challenge
-                submission::ActiveModel {
-                    fk_challenge_id: Set(Some(challenge.id)),
-                    fk_team_id: Set(Some(team.id)),
-                    flag: Set("".to_string()),
-                    // Set the time to now
-                    time: Set(NaiveDateTime::from_timestamp_opt(
-                        now.as_secs() as i64,
-                        now.subsec_nanos(),
-                    )
-                    .unwrap()),
-                    correct: Set(true),
-                    ..Default::default()
-                }
-                .insert(db)
-                .await
-                .unwrap();
+                // Handle solving it
+                handle_request(
+                    Auth::Hacker { agent: Agent::AI },
+                    CTFMessage::SubmitFlag {
+                        challenge_name: challenge.title.clone(),
+                        flag: challenge.flag.clone(),
+                    },
+                    HandleData {
+                        db_clone: db.clone(),
+                        tasks: todo!(),
+                        msg: todo!(),
+                        recipient_clone: todo!(),
+                    },
+                )
+                .await;
+
+                // // Create a submission for this challenge
+                // submission::ActiveModel {
+                //     fk_challenge_id: Set(Some(challenge.id)),
+                //     fk_team_id: Set(Some(team.id)),
+                //     flag: Set("".to_string()),
+                //     // Set the time to now
+                //     time: Set(NaiveDateTime::from_timestamp_opt(
+                //         now.as_secs() as i64,
+                //         now.subsec_nanos(),
+                //     )
+                //     .unwrap()),
+                //     correct: Set(true),
+                //     ..Default::default()
+                // }
+                // .insert(db)
+                // .await
+                // .unwrap();
             }
         }
     }

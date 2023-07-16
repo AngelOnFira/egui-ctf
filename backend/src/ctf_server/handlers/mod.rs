@@ -32,7 +32,7 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
             }
             _ => (),
         },
-        Auth::Hacker { discord_id } => {
+        Auth::Hacker { agent } => {
             match ctf_message.clone() {
                 CTFMessage::CTFClientStateComponent(_) => todo!(),
                 CTFMessage::SubmitFlag {
@@ -42,7 +42,7 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
                     authenticated_submit_flag::handle(
                         &mut handle_data,
                         challenge_name,
-                        discord_id,
+                        agent,
                         flag,
                     )
                     .await
@@ -67,13 +67,13 @@ pub async fn handle_request(auth: Auth, ctf_message: CTFMessage, mut handle_data
                     //             ClientUpdate::Logout, )), }, )]
                 }
                 CTFMessage::JoinTeam(token) => {
-                    authenticated_join_team::handle(&mut handle_data, token, discord_id).await
+                    authenticated_join_team::handle(&mut handle_data, token, agent).await
                 }
                 CTFMessage::CreateTeam(team_name) => {
-                    authenticated_create_team::handle(&mut handle_data, team_name, discord_id).await
+                    authenticated_create_team::handle(&mut handle_data, team_name, agent).await
                 }
                 CTFMessage::LeaveTeam => {
-                    authenticated_leave_team::handle(&mut handle_data, discord_id).await;
+                    authenticated_leave_team::handle(&mut handle_data, agent).await;
                 }
                 CTFMessage::Connect => todo!(),
                 CTFMessage::ResetDB => (),

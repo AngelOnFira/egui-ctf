@@ -103,7 +103,7 @@ async fn update_authenticated_user(
     // Update this session's auth state
     tasks.push(ActorTask::UpdateState(UpdateState::SessionAuth {
         auth: Auth::Hacker {
-            discord_id: hacker.discord_id,
+            agent: hacker.discord_id,
         },
     }));
 

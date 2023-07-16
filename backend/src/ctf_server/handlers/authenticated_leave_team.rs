@@ -1,4 +1,4 @@
-use crate::ctf_server::{ActorTask, ActorTaskTo, HandleData, SendNetworkMessage};
+use crate::ctf_server::{ActorTask, ActorTaskTo, HandleData, SendNetworkMessage, Agent};
 
 use common::{
     ctf_message::{CTFClientStateComponent, CTFMessage, CTFState},
@@ -8,9 +8,9 @@ use entity::entities::hacker;
 
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 
-pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, discord_id: i64) {
-    // check that this hacker is on a team
-
+pub async fn handle<'a>(handle_data: &'a mut HandleData<'a>, agent: Agent) {
+    // Extract the Discord ID from the agent
+    // Check that this hacker is on a team
     let mut hacker: hacker::ActiveModel = hacker::Entity::find_by_id(discord_id)
         .one(&handle_data.db_clone)
         .await
