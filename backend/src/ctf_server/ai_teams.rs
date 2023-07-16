@@ -34,7 +34,7 @@ impl AITeams {
             if rand::random::<f32>() < ((1.0 * 5.0) / seconds_for_chance) {
                 // Find a random player on this team to be the solver of the
                 // challenge. If there isn't any player, create one.
-                let hacker: hacker::ActiveModel = match hacker::Entity::find()
+                let hacker: hacker::Model = match hacker::Entity::find()
                     .filter(hacker::Column::FkTeamId.eq(team.id))
                     .all(db)
                     .await
@@ -43,7 +43,7 @@ impl AITeams {
                         // If there is a hacker, pick one at random
                         let random_hacker = hacker_list.choose(&mut rand::thread_rng());
                         match random_hacker {
-                            Some(hacker) => hacker.clone().into(),
+                            Some(hacker) => hacker.clone(),
                             None => {
                                 // If there isn't a hacker, create one
                                 let hacker = hacker::ActiveModel {
@@ -52,7 +52,7 @@ impl AITeams {
                                     discord_id: Set(rand::random::<i64>()),
                                     username: Set("AI Hacker".to_string()),
                                 };
-                                let hacker = hacker.save(db).await.unwrap();
+                                let hacker = hacker.insert(db).await.unwrap();
                                 hacker
                             }
                         }
@@ -80,7 +80,7 @@ impl AITeams {
                 // Handle solving it
                 handle_request(
                     Auth::Hacker {
-                        discord_id: hacker.discord_id.unwrap(),
+                        discord_id: hacker.discord_id,
                     },
                     HandleData {
                         db_clone: db.clone(),
