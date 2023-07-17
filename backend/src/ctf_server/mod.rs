@@ -69,6 +69,9 @@ impl Actor for CTFServer {
             println!("{} players in the game server", act.sessions.len());
         });
 
+        // Get the address of this actor
+        let addr: Addr<CTFServer> = ctx.address();
+
         // We'll also start a thread to randomly get teams to solve challenges
         let ai_teams = AITeams::new();
         let arbiter = Arbiter::new();
@@ -76,8 +79,9 @@ impl Actor for CTFServer {
         ctx.run_interval(Duration::from_secs(5), move |_act, _ctx| {
             let ai_teams = ai_teams.clone();
             let database_clone = database_clone.clone();
+            let addr_ref = addr.clone();
             arbiter.spawn(async move {
-                ai_teams.run(&database_clone).await;
+                ai_teams.run(&database_clone, &addr_ref).await;
             });
         });
     }

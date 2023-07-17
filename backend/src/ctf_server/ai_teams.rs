@@ -1,3 +1,4 @@
+use actix::Addr;
 use chrono::NaiveDateTime;
 use common::ctf_message::CTFMessage;
 use entity::{
@@ -7,7 +8,9 @@ use entity::{
 use rand::seq::SliceRandom;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
-use super::{handlers::handle_request, ActixRecipient, ActixRequest, Auth, HandleData, RequestID};
+use crate::messages::AnonymousCTFRequest;
+
+use super::{handlers::handle_request, ActixRecipient, ActixRequest, Auth, HandleData, RequestID, CTFServer};
 
 #[derive(Debug, Clone)]
 pub struct AITeams;
@@ -20,7 +23,7 @@ impl AITeams {
     // Each time this is run, roll for a chance of a team solving a challenge.
     // It will be rolled once a second, and each team should solve a challenge
     // once every 1 minute on average.
-    pub async fn run(&self, db: &DatabaseConnection) {
+    pub async fn run(&self, db: &DatabaseConnection, addr: &Addr<CTFServer>) {
         // Start by getting the list of teams
         let teams = team::Entity::find().all(db).await.unwrap();
 
@@ -77,25 +80,34 @@ impl AITeams {
                     }
                 };
 
-                // Handle solving it
-                handle_request(
-                    Auth::Hacker {
-                        discord_id: hacker.discord_id,
+                // Send the message to the CTFServer actor
+                addr.do_send(AnonymousCTFRequest {
+                    ctf_message: CTFMessage::SubmitFlag {
+                        challenge_name: challenge.title.clone(),
+                        flag: challenge.flag.clone(),
                     },
-                    HandleData {
-                        db_clone: db.clone(),
-                        tasks: &mut Vec::new(),
-                        request: ActixRequest {
-                            id: RequestID::Anonymous,
-                            ctf_message: CTFMessage::SubmitFlag {
-                                challenge_name: challenge.title.clone(),
-                                flag: challenge.flag.clone(),
-                            },
-                        },
-                        recipient: ActixRecipient::Anonymous,
-                    },
-                )
-                .await;
+                    discord_id: hacker.discord_id,
+                });
+
+                // // Handle solving it
+                // handle_request(
+                //     Auth::Hacker {
+                //         discord_id: hacker.discord_id,
+                //     },
+                //     HandleData {
+                //         db_clone: db.clone(),
+                //         tasks: &mut Vec::new(),
+                //         request: ActixRequest {
+                //             id: RequestID::Anonymous,
+                //             ctf_message: CTFMessage::SubmitFlag {
+                //                 challenge_name: challenge.title.clone(),
+                //                 flag: challenge.flag.clone(),
+                //             },
+                //         },
+                //         recipient: ActixRecipient::Anonymous,
+                //     },
+                // )
+                // .await;
 
                 // // Create a submission for this challenge
                 // submission::ActiveModel {

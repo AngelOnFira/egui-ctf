@@ -35,7 +35,8 @@ async fn main() -> std::io::Result<()> {
     // Run database migrations
     // Migrator::up(&ctf_server.db, None).await.unwrap();
 
-    let ctf_server = Data::new(ctf_server.start()); //create and spin up a lobby
+    // Create the CTF server actor
+    let ctf_server = Data::new(ctf_server.start());
 
     // env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
     // start an env logger like above, but ignore sqlx queries
