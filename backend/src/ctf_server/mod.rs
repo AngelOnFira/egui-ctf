@@ -1,5 +1,5 @@
 use crate::messages::{
-    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage,
+    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage, AnonymousCTFRequest,
 };
 use actix::prelude::*;
 use common::{
@@ -226,6 +226,55 @@ impl Handler<IncomingCTFRequest> for CTFServer {
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
     fn handle(&mut self, msg: IncomingCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
+        // Items to be moved into closure
+        let db_clone_1 = self.db.clone();
+        let _db_clone_2 = self.db.clone();
+        let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
+        let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
+        let ctf_message = msg.ctf_message.clone();
+
+        let msg_clone_1 = msg.clone();
+        let msg_clone_2 = msg;
+
+        let fut = async move {
+            // Queue of tasks for the actor to take
+            let mut tasks: Vec<ActorTask> = Vec::new();
+
+            let handle_data: HandleData<'_> = HandleData {
+                db_clone: db_clone_1.clone(),
+                tasks: &mut tasks,
+                request: ActixRequest {
+                    id: RequestID::Actix(msg_clone_1.id),
+                    ctf_message: msg_clone_1.ctf_message,
+                },
+                recipient: ActixRecipient::Actix(recipient_clone),
+            };
+
+            handle_request(auth, handle_data).await;
+
+            tasks
+        };
+
+        let fut = actix::fut::wrap_future::<_, Self>(fut);
+
+        // Items to be moved into closure
+        let recipient_clone: WsClientSocket =
+            self.sessions.get(&msg_clone_2.id).unwrap().socket.clone();
+
+        let fut = fut.map(move |result: Vec<ActorTask>, actor, _ctx| {
+            resolve_actor_state(result, actor, msg_clone_2, recipient_clone)
+        });
+
+        // Return the future to be run
+        Box::pin(fut)
+    }
+}
+
+
+impl Handler<AnonymousCTFRequest> for CTFServer {
+    type Result = ResponseActFuture<Self, DeferredWorkResult>;
+
+    fn handle(&mut self, msg: AnonymousCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         // Items to be moved into closure
         let db_clone_1 = self.db.clone();
         let _db_clone_2 = self.db.clone();

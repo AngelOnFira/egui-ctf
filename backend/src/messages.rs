@@ -51,3 +51,9 @@ pub struct IncomingCTFRequest {
     pub id: ClientId,
     pub ctf_message: CTFMessage,
 }
+
+#[derive(Message, Clone)]
+#[rtype(result = "Result<(), MessageError>")]
+pub struct AnonymousCTFRequest {
+    pub ctf_message: CTFMessage,
+}

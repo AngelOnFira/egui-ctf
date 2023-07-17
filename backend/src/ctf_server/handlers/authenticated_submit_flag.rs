@@ -7,6 +7,7 @@ use common::{
 };
 use entity::entities::{challenge, hacker, submission, team};
 
+use log::info;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 pub async fn handle<'a>(
@@ -76,22 +77,6 @@ pub async fn handle<'a>(
         ..Default::default()
     };
 
-    // Check the database to see if there are any challenges with this name
-
-    // Get the hacker that made this submission
-
-    // If they aren't on a team, then they can't submit a flag. Tell them that.
-
-    // Get the hacker's team
-
-    // Make sure there isn't already a submission for this challenge by this
-    // team that is correct
-
-    // If there is already a correct submission, then tell them that they can't
-    // submit another flag for the challenge
-
-    // Prepare the submission to be saved to the database
-
     match challenge {
         Some(challenge) => {
             submission.fk_challenge_id = Set(Some(challenge.id));
@@ -147,6 +132,8 @@ pub async fn handle<'a>(
                             ),
                         )),
                     }));
+
+                println!("{} solved {}", team.name, challenge.title);
             }
         }
         None => {
