@@ -1,5 +1,6 @@
 use crate::messages::{
-    CTFRoomMessage, Connect, DeferredWorkResult, Disconnect, IncomingCTFRequest, WsActorMessage, AnonymousCTFRequest,
+    AnonymousCTFRequest, CTFRoomMessage, Connect, DeferredWorkResult, Disconnect,
+    IncomingCTFRequest, WsActorMessage,
 };
 use actix::prelude::*;
 use common::{
@@ -228,10 +229,8 @@ impl Handler<IncomingCTFRequest> for CTFServer {
     fn handle(&mut self, msg: IncomingCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         // Items to be moved into closure
         let db_clone_1 = self.db.clone();
-        let _db_clone_2 = self.db.clone();
         let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
         let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
-        let ctf_message = msg.ctf_message.clone();
 
         let msg_clone_1 = msg.clone();
         let msg_clone_2 = msg;
@@ -257,12 +256,8 @@ impl Handler<IncomingCTFRequest> for CTFServer {
 
         let fut = actix::fut::wrap_future::<_, Self>(fut);
 
-        // Items to be moved into closure
-        let recipient_clone: WsClientSocket =
-            self.sessions.get(&msg_clone_2.id).unwrap().socket.clone();
-
         let fut = fut.map(move |result: Vec<ActorTask>, actor, _ctx| {
-            resolve_actor_state(result, actor, msg_clone_2, recipient_clone)
+            resolve_actor_state(result, actor, RequestID::Actix(msg_clone_2.id))
         });
 
         // Return the future to be run
@@ -270,20 +265,18 @@ impl Handler<IncomingCTFRequest> for CTFServer {
     }
 }
 
-
 impl Handler<AnonymousCTFRequest> for CTFServer {
     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 
     fn handle(&mut self, msg: AnonymousCTFRequest, _ctx: &mut Self::Context) -> Self::Result {
         // Items to be moved into closure
         let db_clone_1 = self.db.clone();
-        let _db_clone_2 = self.db.clone();
-        let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
-        let auth = self.sessions.get(&msg.id).unwrap().auth.clone();
-        let ctf_message = msg.ctf_message.clone();
+        // let recipient_clone: WsClientSocket = self.sessions.get(&msg.id).unwrap().socket.clone();
+        let auth = Auth::Hacker {
+            discord_id: msg.discord_id,
+        };
 
         let msg_clone_1 = msg.clone();
-        let msg_clone_2 = msg;
 
         let fut = async move {
             // Queue of tasks for the actor to take
@@ -293,10 +286,10 @@ impl Handler<AnonymousCTFRequest> for CTFServer {
                 db_clone: db_clone_1.clone(),
                 tasks: &mut tasks,
                 request: ActixRequest {
-                    id: RequestID::Actix(msg_clone_1.id),
+                    id: RequestID::Anonymous,
                     ctf_message: msg_clone_1.ctf_message,
                 },
-                recipient: ActixRecipient::Actix(recipient_clone),
+                recipient: ActixRecipient::Anonymous,
             };
 
             handle_request(auth, handle_data).await;
@@ -306,12 +299,8 @@ impl Handler<AnonymousCTFRequest> for CTFServer {
 
         let fut = actix::fut::wrap_future::<_, Self>(fut);
 
-        // Items to be moved into closure
-        let recipient_clone: WsClientSocket =
-            self.sessions.get(&msg_clone_2.id).unwrap().socket.clone();
-
         let fut = fut.map(move |result: Vec<ActorTask>, actor, _ctx| {
-            resolve_actor_state(result, actor, msg_clone_2, recipient_clone)
+            resolve_actor_state(result, actor, RequestID::Anonymous)
         });
 
         // Return the future to be run
@@ -342,31 +331,37 @@ impl Handler<AnonymousCTFRequest> for CTFServer {
 fn resolve_actor_state(
     result: Vec<ActorTask>,
     actor: &mut CTFServer,
-    msg: IncomingCTFRequest,
-    _recipient_clone: Recipient<WsActorMessage>,
+    request_id: RequestID,
+    // _recipient_clone: Recipient<WsActorMessage>,
 ) -> Result<(), ()> {
     for task in result {
         match task {
             ActorTask::UpdateState(update_state) => {
-                match update_state {
-                    UpdateState::SessionAuth { auth } => {
-                        // Update the session to be authenticated. If the server
-                        // restarted and a client is still trying to connect,
-                        // then it might be in a bad state here.
-                        if let Some(session) = actor.sessions.get_mut(&msg.id) {
-                            session.auth = auth;
-                        } else {
-                            // TODO: Do some error thing here
+                // Make sure we have a valid actix id
+                match request_id {
+                    RequestID::Actix(id) => {
+                        match update_state {
+                            UpdateState::SessionAuth { auth } => {
+                                // Update the session to be authenticated. If the server
+                                // restarted and a client is still trying to connect,
+                                // then it might be in a bad state here.
+                                if let Some(session) = actor.sessions.get_mut(&id) {
+                                    session.auth = auth;
+                                } else {
+                                    // TODO: Do some error thing here
+                                }
+                            }
+                            UpdateState::Logout => {
+                                // Update the session to be unauthenticated
+                                if let Some(session) = actor.sessions.get_mut(&id) {
+                                    session.auth = Auth::Unauthenticated;
+                                } else {
+                                    // TODO: Do some error thing here
+                                }
+                            }
                         }
                     }
-                    UpdateState::Logout => {
-                        // Update the session to be unauthenticated
-                        if let Some(session) = actor.sessions.get_mut(&msg.id) {
-                            session.auth = Auth::Unauthenticated;
-                        } else {
-                            // TODO: Do some error thing here
-                        }
-                    }
+                    RequestID::Anonymous => todo!(),
                 }
             }
             ActorTask::SendNetworkMessage(send_network_message) => match send_network_message.to {

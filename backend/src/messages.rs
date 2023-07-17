@@ -1,6 +1,6 @@
 use actix::prelude::{Message, Recipient};
 
-use common::{ctf_message::CTFMessage, ClientId, NetworkMessage};
+use common::{ctf_message::{CTFMessage, DiscordClientId}, ClientId, NetworkMessage};
 
 // The response type returned by the actor future
 pub type OriginalActorResponse = ();
@@ -53,7 +53,8 @@ pub struct IncomingCTFRequest {
 }
 
 #[derive(Message, Clone)]
-#[rtype(result = "Result<(), MessageError>")]
+#[rtype(result = "(Result<(), MessageError>)")]
 pub struct AnonymousCTFRequest {
     pub ctf_message: CTFMessage,
+    pub discord_id: DiscordClientId,
 }

@@ -10,11 +10,11 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use super::{handlers::handle_request, ActixRecipient, ActixRequest, Auth, HandleData, RequestID};
 
 #[derive(Debug, Clone)]
-pub struct AITeams {}
+pub struct AITeams;
 
 impl AITeams {
     pub fn new() -> Self {
-        AITeams {}
+        AITeams
     }
 
     // Each time this is run, roll for a chance of a team solving a challenge.
