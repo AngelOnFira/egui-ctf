@@ -91,6 +91,26 @@ pub async fn handle_request(auth: Auth, mut handle_data: HandleData<'_>) {
             println!("Resetting database");
             // Rerun the migrations on the database
             Migrator::fresh(&db_clone).await.unwrap();
+
+            // Download the repo
+            Repo::clone_repo();
+
+            // Load the repo from the repository
+            let repo = Repo::parse_repo();
+
+            // Load all the challenges found into the database
+            repo.update_database().await;
+
+            println!("Spawn 10 teams");
+            // Spawn 1000 teams
+            team::Entity::insert_many((0..10).map(|i| team::ActiveModel {
+                name: Set(format!("Team {}", i)),
+                join_token: Set("".to_string()),
+                ..Default::default()
+            }))
+            .exec(&db_clone)
+            .await
+            .unwrap();
         }
         CTFMessage::SpawnTeams => {
             println!("Spawning teams");
