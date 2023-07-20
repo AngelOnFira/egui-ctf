@@ -34,7 +34,7 @@ impl AITeams {
             // Chance is how many seconds it should take on average to solve a challenge
             let seconds_for_chance = 10.0;
 
-            if rand::random::<f32>() < ((1.0 * 5.0) / seconds_for_chance) {
+            if rand::random::<f32>() < ((1.0) / seconds_for_chance) {
                 // Find a random player on this team to be the solver of the
                 // challenge. If there isn't any player, create one.
                 let hacker: hacker::Model = match hacker::Entity::find()
