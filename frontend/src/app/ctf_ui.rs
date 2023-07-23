@@ -18,6 +18,8 @@ pub fn ctf_ui(ctf_app: &mut CTFApp, ctx: &egui::Context, frame: &mut eframe::Fra
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.heading("Windows");
 
+            
+
             ui.vertical_centered_justified(|ui| {
                 ui.style_mut().text_styles = [(Button, FontId::new(18.0, Proportional))].into();
 
